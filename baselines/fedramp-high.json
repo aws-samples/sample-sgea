@@ -1,0 +1,33 @@
+{
+  "_baseline": "fedramp-high",
+  "_doc": "FedRAMP High baseline fragment. NOT a config flip of Moderate: it moves to the AWS GovCloud (US) partition, which changes endpoints, ARNs and service availability. Treat standing this profile up as its own effort — the values here are a scaffold slot, flagged for validation against GovCloud service availability and the High control set. Verify every service in 'allow' is available and authorized at High in GovCloud before use.",
+  "_status": "scaffold-unverified",
+  "partition": "aws-us-gov",
+  "regions": {
+    "primary": "us-gov-west-1",
+    "allowed": ["us-gov-west-1", "us-gov-east-1"],
+    "inference_profile_geo": "us-gov"
+  },
+  "guardrails": {
+    "tier": "standard-plus",
+    "levels": ["L1_org", "L2_account_baseline", "L3_tenant_enforced", "gateway_tool_path"],
+    "pii": { "mode": "block", "action": "BLOCK", "phi_entities": false, "contextual_action": "ANONYMIZE" },
+    "denied_topics": [],
+    "content_filters": {
+      "HATE": "HIGH", "INSULTS": "HIGH", "SEXUAL": "HIGH",
+      "VIOLENCE": "HIGH", "MISCONDUCT": "HIGH", "PROMPT_ATTACK": "HIGH"
+    }
+  },
+  "logging": {
+    "retention_days": 1095,
+    "model_invocation_logging": true,
+    "tenant_log_split": true,
+    "most_sensitive_store": true,
+    "cloudtrail_data_events": ["bedrock", "s3-enclave-buckets"]
+  },
+  "evidence": {
+    "control_catalogs": ["nist-800-53-rev5-high"], "conformance_packs": ["FedRAMP-HighPart1", "FedRAMP-HighPart2"],
+    "crm_profile": "fedramp-high",
+    "conmon": true
+  }
+}

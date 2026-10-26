@@ -1,0 +1,16 @@
+{
+  "profile": {
+    "id": "fedramp-low-commercial",
+    "name": "FedRAMP Low (commercial)",
+    "description": "Low-impact composite: the FedRAMP Low baseline in the commercial AWS partition. A lighter baseline — the same enclave architecture with Low-impact control stringency. Suitable for low-impact, non-sensitive workloads; step up to the Moderate profile when the data warrants it.",
+    "extends": ["fedramp-low"],
+    "reference_adopter": ""
+  },
+  "baselines": ["fedramp-low"],
+  "emit": {
+    "targets": ["terraform", "cdk"],
+    "terraform": { "backend": "s3" },
+    "cdk": { "language": "typescript" }
+  },
+  "overrides": {}
+}

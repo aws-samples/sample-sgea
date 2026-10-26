@@ -1,0 +1,48 @@
+{
+  "_baseline": "fedramp-moderate",
+  "_doc": "FedRAMP Moderate (AWS 'Class C') baseline fragment, commercial partition. The reference baseline. Later baselines in a profile's extends[] override these values on conflict.",
+  "partition": "aws",
+  "regions": {
+    "primary": "us-east-1",
+    "allowed": ["us-east-1", "us-east-2", "us-west-2"],
+    "inference_profile_geo": "us"
+  },
+  "guardrails": {
+    "tier": "standard",
+    "levels": ["L1_org", "L2_account_baseline", "L3_tenant_enforced", "gateway_tool_path"],
+    "pii": { "mode": "block", "action": "BLOCK", "phi_entities": false, "contextual_action": "ANONYMIZE" },
+    "denied_topics": [],
+    "content_filters": {
+      "HATE": "HIGH", "INSULTS": "HIGH", "SEXUAL": "HIGH",
+      "VIOLENCE": "HIGH", "MISCONDUCT": "MEDIUM", "PROMPT_ATTACK": "HIGH"
+    }
+  },
+  "policies": {
+    "scps": ["bre-scp-01-region-lockdown", "bre-scp-02-bedrock-surface", "bre-scp-03-inference-profile", "bre-scp-04-guardrail-enforce", "bre-scp-05-data-perimeter", "bre-scp-06-tenant-isolation", "bre-scp-07-model-allowlist"],
+    "rcps": ["rcp-01-identity-perimeter", "rcp-02-network-perimeter"]
+  },
+  "logging": {
+    "retention_days": 365,
+    "model_invocation_logging": true,
+    "tenant_log_split": true,
+    "most_sensitive_store": true,
+    "cloudtrail_data_events": ["bedrock", "s3-enclave-buckets"]
+  },
+  "services": {
+    "allow": ["bedrock", "bedrock-agentcore", "aurora-postgresql", "kms", "cloudwatch", "cloudtrail", "s3", "lambda", "dynamodb", "sns", "eventbridge", "firehose", "cognito", "elasticache"],
+    "hipaa_eligible_only": false
+  },
+  "evidence": {
+    "control_catalogs": ["nist-800-53-rev5-moderate"], "conformance_packs": ["FedRAMP-Moderate"],
+    "crm_profile": "fedramp-moderate",
+    "conmon": true
+  },
+  "vector_store": "aurora-postgresql",
+  "token_control": {
+    "enabled": true,
+    "default_timezone": "America/New_York",
+    "fail_closed_hours": 4,
+    "per_user_daily_tokens": 500000,
+    "per_team_monthly_tokens": 50000000
+  }
+}

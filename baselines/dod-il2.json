@@ -1,0 +1,25 @@
+{
+  "_baseline": "dod-il2",
+  "_doc": "DoD SRG Impact Level 2 (IL2) baseline fragment: DoD public / non-controlled unclassified information. IL2 maps to FedRAMP Moderate (Class C) in the commercial US East/West regions (AWS Services in Scope: 'DoD CSP SRG IL2 (East/West)'). Composed on top of fedramp-moderate; adds the DoD SRG IL2 catalog and CMMC detective coverage. Scaffold until validated with the DoD mission owner / AO.",
+  "_status": "scaffold-unverified",
+  "partition": "aws",
+  "regions": {
+    "primary": "us-east-1",
+    "allowed": [
+      "us-east-1",
+      "us-east-2",
+      "us-west-2"
+    ],
+    "inference_profile_geo": "us"
+  },
+  "evidence": {
+    "control_catalogs": [
+      "dod-srg-il2"
+    ],
+    "conformance_packs": [
+      "CMMC-2.0-Level-2"
+    ],
+    "crm_profile": "dod-il2",
+    "conmon": true
+  }
+}

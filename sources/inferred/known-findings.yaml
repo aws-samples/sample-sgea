@@ -1,0 +1,39 @@
+# SGEA known findings: framework rules AWS Config reports NON_COMPLIANT on an SGEA deployment that SGEA has
+# NOT fixed (yet) and that are not by-design exceptions (those are `exceptions:` in rule-dispositions.yaml).
+# status: open -> rendered as customer actions; status: fixed -> kept for the record (fix + verification), shown in
+# docs/evidence/README.md because older evidence reports still show the finding.
+# Customer-facing: rendered into every affected profile's MANUAL-STEPS.md (`sgea export`) and into
+# docs/evidence/README.md. Each entry names the rule, what was observed, the impact, and what the customer does.
+findings:
+  - id: SGEA-KF-01
+    rule: s3-event-notifications-enabled
+    owner: enclave
+    status: fixed
+    observed: >-
+      HITRUST sandbox runs of 2026-10-16 (Terraform and CDK): AWS Config reported the enclave log store and AWS Config
+      delivery bucket NON_COMPLIANT — notifications went to Amazon EventBridge only, and the rule counts SNS / SQS /
+      Lambda destinations.
+    fix: >-
+      The log store, the AWS Config delivery bucket and the access-log sink publish s3:ObjectRemoved:* to a
+      CMK-encrypted SNS topic (sgea-<env>-log-store-events; topic policy limited to s3.amazonaws.com from this account
+      and the enclave buckets; key policy statement S3EventNotificationsToEncryptedSns), in both engines. The
+      cross-region replica buckets are exempt (tag sgea:region=replica), as in `sgea check`.
+    verified: >-
+      HITRUST sandbox runs of 2026-10-21, CDK and Terraform: AWS Config reports no SGEA bucket NON_COMPLIANT for the
+      rule (only pre-existing buckets in the sandbox account).
+  - id: SGEA-KF-02
+    rule: lambda-concurrency-check
+    owner: tenant
+    status: open
+    observed: >-
+      Every sandbox run: the sample tenant's tool Lambda reserves 20 concurrent executions; the FedRAMP Low /
+      Moderate / High and DoD IL2 / IL5 packs set ConcurrencyLimitLow = 500 (AWS sample value), so AWS Config
+      reports it NON_COMPLIANT. The enclave's own functions reserve 500 (see MANUAL-STEPS: Lambda quota).
+    impact: >-
+      Every tenant Lambda function needs reserved concurrency within the pack range (500-1000) to pass, which
+      consumes account concurrency quickly (each 500 needs matching quota headroom).
+    customer_action: >-
+      Choose one with your ISSO: (a) set reserved concurrency >= 500 on tenant functions and size the Lambda
+      concurrency quota for them, or (b) deploy the conformance packs with a ConcurrencyLimitLow / High range that
+      fits your workloads (the control — every function has a concurrency limit — is unchanged), or (c) record
+      the tenant deviation as accepted.

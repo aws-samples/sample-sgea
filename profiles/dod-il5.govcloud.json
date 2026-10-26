@@ -1,0 +1,45 @@
+{
+  "profile": {
+    "id": "dod-il5-govcloud",
+    "name": "DoD IL5 (GovCloud)",
+    "description": "Scaffold profile for DoD SRG Impact Level 5 in AWS GovCloud (US): FedRAMP High plus DoD IL5 controls, inside a DoD SCCA boundary. NOT yet validated.",
+    "extends": [
+      "fedramp-moderate",
+      "fedramp-high",
+      "dod-il5"
+    ],
+    "reference_adopter": ""
+  },
+  "baselines": [
+    "dod-il5"
+  ],
+  "overrides": {
+    "services": {
+      "allow": [
+        "bedrock",
+        "bedrock-agentcore",
+        "aurora-postgresql",
+        "kms",
+        "cloudwatch",
+        "cloudtrail",
+        "s3",
+        "lambda",
+        "dynamodb",
+        "sns",
+        "eventbridge"
+      ]
+    }
+  },
+  "emit": {
+    "targets": [
+      "terraform",
+      "cdk"
+    ],
+    "terraform": {
+      "backend": "s3"
+    },
+    "cdk": {
+      "language": "typescript"
+    }
+  }
+}

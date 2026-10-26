@@ -1,0 +1,29 @@
+{
+  "profile": {
+    "id": "dod-il2-commercial",
+    "name": "DoD IL2 (commercial East/West)",
+    "description": "Scaffold profile for DoD SRG Impact Level 2 (non-CUI) in the commercial US East/West regions: FedRAMP Moderate plus the DoD IL2 catalog. Validate with the DoD mission owner before production.",
+    "extends": [
+      "fedramp-moderate",
+      "dod-il2"
+    ],
+    "reference_adopter": ""
+  },
+  "baselines": [
+    "fedramp-moderate",
+    "dod-il2"
+  ],
+  "emit": {
+    "targets": [
+      "terraform",
+      "cdk"
+    ],
+    "terraform": {
+      "backend": "s3"
+    },
+    "cdk": {
+      "language": "typescript"
+    }
+  },
+  "overrides": {}
+}

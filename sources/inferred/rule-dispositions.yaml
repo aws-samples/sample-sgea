@@ -1,0 +1,154 @@
+# SGEA rule-disposition register (SGEA-authored; ISSO review required).
+#
+# EVERY AWS Config rule in EVERY conformance pack a baseline composes must be accounted for, either
+#   (a) by a plan/CFN mapping in config-rule-plan-checks.json (evaluated by `sgea check`), or
+#   (b) by exactly one entry here.
+# tools/build_catalog.py fails when a rule has neither, or both (a mapped rule needs no disposition),
+# so a framework control can no longer go silently missing. `docs/CONTROL-COVERAGE.md` is generated
+# from the catalogs + this file.
+#
+# disposition:
+#   implement              the enclave owns the resource: must be emitted (TF + CDK) and mapped. Open gap
+#                          until then — `sgea check` reports it as GAP (counts as a required FAIL).
+#   tenant                 the service is allowed for tenant apps (services.allow); the enclave emits no
+#                          such resource. Config evaluates tenant resources at runtime.
+#   not-in-enclave         the service is neither emitted nor allowed (the SCP denies it); vacuously
+#                          compliant. Config still evaluates the account at runtime.
+#   customer-prerequisite  account / identity / network baseline owned by the customer landing zone
+#                          (Control Tower / LZA / the VPC owner). Listed in INSTALL prerequisites.
+#   process                not a configuration (assessment, plan, exercise). Evidence via Audit Manager.
+#   runtime-only           only observable on the live account (findings, rotation runs, snapshots).
+#                          Config evaluates it; no deploy-time check is possible.
+dispositions:
+  # ---------- account / identity baseline (landing zone) ----------
+  access-keys-rotated: {disposition: customer-prerequisite, reason: "IAM user access keys; the enclave creates no IAM users (roles only). Landing-zone identity baseline (IAM Identity Center)."}
+  account-part-of-organizations: {disposition: customer-prerequisite, reason: "The enclave account must be an Organizations member (required for the SCP/RCP layer). Landing zone."}
+  iam-group-has-users-check: {disposition: customer-prerequisite, reason: "IAM groups/users are not created by the enclave; identity via IAM Identity Center."}
+  iam-root-access-key-check: {disposition: customer-prerequisite, reason: "Root user hygiene is an account baseline (Control Tower / LZA)."}
+  iam-user-group-membership-check: {disposition: customer-prerequisite, reason: "No IAM users in the enclave; identity via IAM Identity Center."}
+  iam-user-mfa-enabled: {disposition: customer-prerequisite, reason: "No IAM users in the enclave; identity via IAM Identity Center (MFA enforced there)."}
+  iam-user-no-policies-check: {disposition: customer-prerequisite, reason: "No IAM users in the enclave."}
+  iam-user-unused-credentials-check: {disposition: customer-prerequisite, reason: "No IAM users in the enclave."}
+  mfa-enabled-for-iam-console-access: {disposition: customer-prerequisite, reason: "No IAM users in the enclave; console access via IAM Identity Center with MFA."}
+  root-account-hardware-mfa-enabled: {disposition: customer-prerequisite, reason: "Root user MFA is an account baseline (Control Tower / LZA); cannot be set by IaC."}
+  root-account-mfa-enabled: {disposition: customer-prerequisite, reason: "Root user MFA is an account baseline; cannot be set by IaC."}
+  # ---------- customer VPC (supplied to the enclave as inputs) ----------
+  internet-gateway-authorized-vpc-only: {disposition: customer-prerequisite, reason: "The enclave VPC is customer-supplied and must have no IGW (examples/sandbox-network has none)."}
+  no-unrestricted-route-to-igw: {disposition: customer-prerequisite, reason: "Customer VPC routing; the enclave requires private subnets without IGW routes."}
+  subnet-auto-assign-public-ip-disabled: {disposition: customer-prerequisite, reason: "Customer VPC subnets; the enclave requires private subnets (sandbox fixture complies)."}
+  restricted-ssh: {disposition: customer-prerequisite, reason: "Security groups are customer inputs (endpoint / agent / Aurora SGs); the sandbox fixture opens no SSH."}
+  restricted-common-ports: {disposition: customer-prerequisite, reason: "Security groups are customer inputs; the sandbox fixture allows only 443/5432 inside the VPC CIDR."}
+  vpc-sg-open-only-to-authorized-ports: {disposition: customer-prerequisite, reason: "Security groups are customer inputs; no 0.0.0.0/0 ingress in the sandbox fixture."}
+  vpc-vpn-2-tunnels-up: {disposition: customer-prerequisite, reason: "Site-to-site VPN (e.g. DoD BCAP path) is customer network; the enclave creates none."}
+  # ---------- process (Audit Manager manual evidence) ----------
+  annual-risk-assessment-performed: {disposition: process, reason: "Manual control (Audit Manager evidence): annual risk assessment."}
+  response-plan-tested: {disposition: process, reason: "Manual control: incident-response plan exercise."}
+  vuln-management-plan-exists: {disposition: process, reason: "Manual control: vulnerability-management plan."}
+  # ---------- runtime-only ----------
+  guardduty-non-archived-findings: {disposition: runtime-only, reason: "Operational: GuardDuty findings must be triaged within the window; the enclave enables GuardDuty (security-services)."}
+  dynamodb-throughput-limit-check: {disposition: runtime-only, reason: "Account throughput vs. limit at runtime; the ledger is on-demand."}
+  secretsmanager-scheduled-rotation-success-check: {disposition: runtime-only, reason: "Rotation outcome is only observable live; the Aurora admin secret is RDS-managed with rotation on."}
+  rds-snapshots-public-prohibited: {disposition: runtime-only, reason: "Snapshots exist only at runtime; Aurora is private, and the snapshot-sharing block is set account-wide (see ebs-snapshot-public-restorable-check for EBS)."}
+  s3-bucket-policy-grantee-check: {disposition: runtime-only, reason: "Pack leaves the allowed grantees unset (customer-specific); enclave bucket policies grant only AWS services / the account, with conditions (checked by s3-bucket-ssl-requests-only and PAB mappings)."}
+  ec2-managedinstance-association-compliance-status-check: {disposition: not-in-enclave, reason: "No EC2 instances / SSM managed nodes in the enclave."}
+  ec2-managedinstance-patch-compliance-status-check: {disposition: not-in-enclave, reason: "No EC2 instances / SSM managed nodes in the enclave."}
+  # ---------- implement: enclave-owned resources ----------
+  # ---------- tenant (service allowed for tenant apps) ----------
+  elasticache-redis-cluster-automatic-backup-check: {disposition: tenant, reason: "ElastiCache is allowed for tenants; the enclave creates no cache."}
+  # ---------- not-in-enclave (service neither emitted nor allowed) ----------
+  acm-certificate-expiration-check: {disposition: not-in-enclave, reason: "No ACM certificates (no load balancers / custom domains)."}
+  alb-http-drop-invalid-header-enabled: {disposition: not-in-enclave, reason: "No load balancers; ELB not in services.allow."}
+  alb-http-to-https-redirection-check: {disposition: not-in-enclave, reason: "No load balancers."}
+  alb-waf-enabled: {disposition: not-in-enclave, reason: "No load balancers."}
+  elb-acm-certificate-required: {disposition: not-in-enclave, reason: "No load balancers."}
+  elb-cross-zone-load-balancing-enabled: {disposition: not-in-enclave, reason: "No load balancers."}
+  elb-deletion-protection-enabled: {disposition: not-in-enclave, reason: "No load balancers."}
+  elb-logging-enabled: {disposition: not-in-enclave, reason: "No load balancers."}
+  elb-predefined-security-policy-ssl-check: {disposition: not-in-enclave, reason: "No load balancers."}
+  elb-tls-https-listeners-only: {disposition: not-in-enclave, reason: "No load balancers."}
+  elbv2-acm-certificate-required: {disposition: not-in-enclave, reason: "No load balancers."}
+  api-gw-associated-with-waf: {disposition: not-in-enclave, reason: "No API Gateway; ingress is the AgentCore Runtime/Gateway (JWT, VPC endpoint)."}
+  api-gw-cache-enabled-and-encrypted: {disposition: not-in-enclave, reason: "No API Gateway."}
+  api-gw-execution-logging-enabled: {disposition: not-in-enclave, reason: "No API Gateway."}
+  api-gw-ssl-enabled: {disposition: not-in-enclave, reason: "No API Gateway."}
+  autoscaling-group-elb-healthcheck-required: {disposition: not-in-enclave, reason: "No Auto Scaling groups."}
+  autoscaling-launch-config-public-ip-disabled: {disposition: not-in-enclave, reason: "No Auto Scaling launch configurations."}
+  beanstalk-enhanced-health-reporting-enabled: {disposition: not-in-enclave, reason: "No Elastic Beanstalk."}
+  elastic-beanstalk-managed-updates-enabled: {disposition: not-in-enclave, reason: "No Elastic Beanstalk."}
+  codebuild-project-artifact-encryption: {disposition: not-in-enclave, reason: "No CodeBuild (images built outside the enclave and pushed to ECR)."}
+  codebuild-project-envvar-awscred-check: {disposition: not-in-enclave, reason: "No CodeBuild."}
+  codebuild-project-logging-enabled: {disposition: not-in-enclave, reason: "No CodeBuild."}
+  codebuild-project-s3-logs-encrypted: {disposition: not-in-enclave, reason: "No CodeBuild."}
+  codebuild-project-source-repo-url-check: {disposition: not-in-enclave, reason: "No CodeBuild."}
+  dms-replication-not-public: {disposition: not-in-enclave, reason: "No DMS."}
+  ebs-in-backup-plan: {disposition: not-in-enclave, reason: "No EBS volumes (no EC2)."}
+  ebs-optimized-instance: {disposition: not-in-enclave, reason: "No EC2 instances."}
+  ebs-resources-protected-by-backup-plan: {disposition: not-in-enclave, reason: "No EBS volumes."}
+  ec2-imdsv2-check: {disposition: not-in-enclave, reason: "No EC2 instances."}
+  ec2-instance-detailed-monitoring-enabled: {disposition: not-in-enclave, reason: "No EC2 instances."}
+  ec2-instance-managed-by-systems-manager: {disposition: not-in-enclave, reason: "No EC2 instances."}
+  ec2-instance-no-public-ip: {disposition: not-in-enclave, reason: "No EC2 instances."}
+  ec2-instance-profile-attached: {disposition: not-in-enclave, reason: "No EC2 instances."}
+  ec2-instances-in-vpc: {disposition: not-in-enclave, reason: "No EC2 instances."}
+  ec2-resources-protected-by-backup-plan: {disposition: not-in-enclave, reason: "No EC2 instances."}
+  ec2-stopped-instance: {disposition: not-in-enclave, reason: "No EC2 instances."}
+  ec2-volume-inuse-check: {disposition: not-in-enclave, reason: "No EBS volumes."}
+  encrypted-volumes: {disposition: not-in-enclave, reason: "No EBS volumes (EBS default encryption is set account-wide anyway)."}
+  eip-attached: {disposition: not-in-enclave, reason: "No Elastic IPs."}
+  ecs-containers-readonly-access: {disposition: not-in-enclave, reason: "No ECS (agents run on AgentCore Runtime)."}
+  ecs-task-definition-memory-hard-limit: {disposition: not-in-enclave, reason: "No ECS."}
+  ecs-task-definition-user-for-host-mode-check: {disposition: not-in-enclave, reason: "No ECS."}
+  efs-encrypted-check: {disposition: not-in-enclave, reason: "No EFS."}
+  efs-in-backup-plan: {disposition: not-in-enclave, reason: "No EFS."}
+  efs-resources-protected-by-backup-plan: {disposition: not-in-enclave, reason: "No EFS."}
+  eks-endpoint-no-public-access: {disposition: not-in-enclave, reason: "No EKS."}
+  emr-kerberos-enabled: {disposition: not-in-enclave, reason: "No EMR."}
+  emr-master-no-public-ip: {disposition: not-in-enclave, reason: "No EMR."}
+  elasticsearch-encrypted-at-rest: {disposition: not-in-enclave, reason: "No OpenSearch (excluded by ADR 0001; vector store is Aurora)."}
+  elasticsearch-in-vpc-only: {disposition: not-in-enclave, reason: "No OpenSearch."}
+  elasticsearch-logs-to-cloudwatch: {disposition: not-in-enclave, reason: "No OpenSearch."}
+  elasticsearch-node-to-node-encryption-check: {disposition: not-in-enclave, reason: "No OpenSearch."}
+  opensearch-encrypted-at-rest: {disposition: not-in-enclave, reason: "No OpenSearch."}
+  opensearch-https-required: {disposition: not-in-enclave, reason: "No OpenSearch."}
+  opensearch-in-vpc-only: {disposition: not-in-enclave, reason: "No OpenSearch."}
+  opensearch-logs-to-cloudwatch: {disposition: not-in-enclave, reason: "No OpenSearch."}
+  opensearch-node-to-node-encryption-check: {disposition: not-in-enclave, reason: "No OpenSearch."}
+  fsx-resources-protected-by-backup-plan: {disposition: not-in-enclave, reason: "No FSx."}
+  kinesis-stream-encrypted: {disposition: not-in-enclave, reason: "No Kinesis Data Streams (Firehose is allowed for tenants; streams are not)."}
+  redshift-audit-logging-enabled: {disposition: not-in-enclave, reason: "No Redshift."}
+  redshift-backup-enabled: {disposition: not-in-enclave, reason: "No Redshift."}
+  redshift-cluster-configuration-check: {disposition: not-in-enclave, reason: "No Redshift."}
+  redshift-cluster-kms-enabled: {disposition: not-in-enclave, reason: "No Redshift."}
+  redshift-cluster-maintenancesettings-check: {disposition: not-in-enclave, reason: "No Redshift."}
+  redshift-cluster-public-access-check: {disposition: not-in-enclave, reason: "No Redshift."}
+  redshift-default-admin-check: {disposition: not-in-enclave, reason: "No Redshift."}
+  redshift-enhanced-vpc-routing-enabled: {disposition: not-in-enclave, reason: "No Redshift."}
+  redshift-require-tls-ssl: {disposition: not-in-enclave, reason: "No Redshift."}
+  sagemaker-endpoint-configuration-kms-key-configured: {disposition: not-in-enclave, reason: "No SageMaker (models via Bedrock)."}
+  sagemaker-notebook-instance-kms-key-configured: {disposition: not-in-enclave, reason: "No SageMaker."}
+  sagemaker-notebook-no-direct-internet-access: {disposition: not-in-enclave, reason: "No SageMaker."}
+  ssm-document-not-public: {disposition: not-in-enclave, reason: "No SSM documents (account-level SSM document sharing block is a landing-zone setting)."}
+  waf-regional-webacl-not-empty: {disposition: not-in-enclave, reason: "No WAF (no ALB / API Gateway)."}
+  wafv2-logging-enabled: {disposition: not-in-enclave, reason: "No WAF."}
+
+# Documented exceptions: enclave resources AWS Config will report NON_COMPLIANT by design, with the reason.
+# tools/collect_evidence.py marks matching live findings "exception" (not a deviation); docs/CONTROL-COVERAGE.md
+# lists them. `resource` is a glob over the Config resource id; `<env>` = the enclave env name.
+exceptions:
+  - {rule: s3-bucket-default-lock-enabled, resource: "sgea-<env>-config-*", reason: "AWS Config delivery bucket: S3 rejects writes to Object Lock buckets without a checksum header and the AWS Config writer sends none (verified: InsufficientDeliveryPolicyException). Otherwise identical hardening."}
+  - {rule: s3-bucket-default-lock-enabled, resource: "sgea-<env>-access-logs-*", reason: "S3 server-access-log target: log delivery does not support Object Lock targets reliably; access logs are not the system of record."}
+  - {rule: s3-bucket-replication-enabled, resource: "sgea-<env>-config-*", reason: "AWS Config retains configuration history itself; the delivery bucket is not replicated."}
+  - {rule: s3-bucket-replication-enabled, resource: "sgea-<env>-access-logs-*", reason: "Access-log sink (and its replica-region twin) is not replicated: it records access to the replicated log store."}
+  - {rule: s3-bucket-replication-enabled, resource: "sgea-<env>-logs-replica-*", reason: "Cross-region replica of the log store: it is the replication destination."}
+  - {rule: s3-bucket-logging-enabled, resource: "sgea-<env>-access-logs-*", reason: "S3 server-access-log target cannot log to itself."}
+  - {rule: s3-bucket-policy-grantee-check, resource: "sgea-<env>-config-*", reason: "Config delivery statement grants Principal * restricted by aws:PrincipalArn = the AWS Config service-linked role and the account (AWS's documented pattern for SLR delivery); the rule only matches literal principals."}
+  - {rule: aurora-resources-protected-by-backup-plan, resource: "*", reason: "Time-dependent: AWS Backup counts a resource as protected once its first recovery point exists (daily plan, 05:00 UTC). The enclave Aurora cluster is in the backup selection from deploy."}
+  - {rule: rds-resources-protected-by-backup-plan, resource: "*", reason: "Time-dependent (first recovery point); see aurora-resources-protected-by-backup-plan."}
+  - {rule: dynamodb-resources-protected-by-backup-plan, resource: "*", reason: "Time-dependent (first recovery point); the token ledger is in the backup selection from deploy."}
+  - {rule: s3-resources-protected-by-backup-plan, resource: "*", reason: "Time-dependent (first recovery point); the log / config stores are in the backup selection from deploy."}
+  - {rule: s3-default-encryption-kms, resource: "sgea-<env>-access-logs-*", reason: "S3 server-access logging supports only SSE-S3 (AES256) destination buckets, not SSE-KMS (AWS S3 User Guide); the access-log sink uses SSE-S3 with versioning, TLS-only policy and Block Public Access."}
+  - {rule: lambda-concurrency-check, owner: cdk-deploy-helper, resource: "*", reason: "CDK deploy helpers (AwsCustomResource provider, PropagationWait) run for seconds per deployment; reserving the pack's 500-1000 for each would exhaust account concurrency. Their log groups are CMK-encrypted with pack retention."}
+  - {rule: lambda-inside-vpc, owner: cdk-deploy-helper, resource: "*", reason: "CDK deploy helpers call AWS control-plane APIs during deployment only; they handle no enclave data."}
+  - {rule: lambda-dlq-check, owner: cdk-deploy-helper, resource: "*", reason: "CDK deploy helpers are invoked synchronously by CloudFormation; failures surface as stack events, not dead letters."}
+  - {rule: cloudtrail-s3-dataevents-enabled, resource: "*", reason: "The enclave trail records S3 data events for every bucket except its own log store (resources.ARN NotStartsWith the log store): logging the trail's destination would record the trail's own writes in a feedback loop. Object-level access to the log store is recorded by its S3 server access logs (access-log sink), and the store is Object Lock / versioned, CMK-encrypted, replicated."}
+  - {rule: dynamodb-in-backup-plan, resource: "*", reason: "Time-dependent: AWS Config can evaluate the new token-ledger table before the backup plan that selects it exists ('No backup plans are available for evaluation'); the periodic re-evaluation (24 h), or start-config-rules-evaluation after deploy (MANUAL-STEPS), turns it COMPLIANT."}

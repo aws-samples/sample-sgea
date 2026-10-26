@@ -1,0 +1,16 @@
+{
+  "profile": {
+    "id": "fedramp-moderate-hipaa-hitrust-commercial",
+    "name": "FedRAMP Moderate + HIPAA + HITRUST CSF (commercial)",
+    "description": "Healthcare composite: the FedRAMP Moderate baseline, the HIPAA overlay, and the HITRUST CSF overlay in the commercial AWS partition. HITRUST CSF harmonizes HIPAA with other authorities, so it is composed on top of the HIPAA overlay. Certification/control mappings require assessor and ISSO review.",
+    "extends": ["fedramp-moderate", "hipaa", "hitrust"],
+    "reference_adopter": ""
+  },
+  "baselines": ["fedramp-moderate", "hipaa", "hitrust"],
+  "emit": {
+    "targets": ["terraform", "cdk"],
+    "terraform": { "backend": "s3" },
+    "cdk": { "language": "typescript" }
+  },
+  "overrides": {}
+}

@@ -1,0 +1,422 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "sgea/profile.schema.json",
+  "title": "SGEA Resolved Deployment Profile",
+  "description": "The emitter-agnostic contract for the Secure GenAI Enclave Accelerator (SGEA). A profile is composed from one or more control baselines plus profile-level overrides, then RESOLVED into a single document that both the Terraform and CDK emitters consume. There is exactly one place where a control decision lives: here. Emitters never re-decide what a baseline means \u2014 they only translate this resolved document into IaC.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "profile",
+    "partition",
+    "regions",
+    "baselines",
+    "guardrails",
+    "policies",
+    "logging",
+    "services",
+    "evidence",
+    "vector_store",
+    "token_control"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "_generated": {
+      "type": "object",
+      "description": "Audit stamp added by sgea.py at resolve time (tool, version, timestamp, source profile). Informational; not a control input.",
+      "additionalProperties": true
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "description"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "description": "Stable slug, e.g. 'fedramp-moderate-hipaa-commercial'."
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "extends": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ordered list of baseline ids to compose (later wins on conflict). Resolved before 'overrides' is applied."
+        },
+        "reference_adopter": {
+          "type": "string",
+          "description": "Optional worked-example customer label for collateral only. MUST NOT affect emitted IaC. Default empty = fully generic."
+        }
+      }
+    },
+    "partition": {
+      "type": "string",
+      "enum": [
+        "aws",
+        "aws-us-gov"
+      ],
+      "description": "AWS partition. FedRAMP High => 'aws-us-gov' (GovCloud); Moderate/HIPAA typically 'aws' (commercial). This is a BUILD AXIS, not a toggle: it changes endpoints, ARNs, service availability and provider config."
+    },
+    "regions": {
+      "type": "object",
+      "required": [
+        "primary",
+        "allowed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "type": "string"
+        },
+        "allowed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "inference_profile_geo": {
+          "type": "string",
+          "enum": [
+            "us",
+            "us-gov"
+          ],
+          "description": "Geographic inference-profile family. 'global.*' is never permitted in an enclave."
+        }
+      }
+    },
+    "baselines": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "fedramp-low",
+          "fedramp-moderate",
+          "fedramp-high",
+          "hipaa",
+          "dod-il2",
+          "dod-il4",
+          "dod-il5",
+          "hitrust",
+          "fda-21-cfr-part-11"
+        ]
+      },
+      "minItems": 1,
+      "description": "The control baselines this profile asserts. Echoed into the resolved doc so evidence and emitters know what was composed."
+    },
+    "guardrails": {
+      "type": "object",
+      "required": [
+        "tier",
+        "levels",
+        "pii",
+        "denied_topics",
+        "content_filters"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "standard-plus"
+          ],
+          "description": "Bedrock Guardrail tier."
+        },
+        "levels": {
+          "type": "array",
+          "description": "Which enforced guardrail levels are active. L1 org, L2 account-baseline, L3 tenant-enforced, plus the Gateway tool-path screen.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "L1_org",
+              "L2_account_baseline",
+              "L3_tenant_enforced",
+              "gateway_tool_path"
+            ]
+          },
+          "minItems": 1
+        },
+        "pii": {
+          "type": "object",
+          "required": [
+            "mode",
+            "action"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "block",
+                "anonymize",
+                "off"
+              ]
+            },
+            "action": {
+              "type": "string",
+              "enum": [
+                "BLOCK",
+                "ANONYMIZE",
+                "NONE"
+              ]
+            },
+            "phi_entities": {
+              "type": "boolean",
+              "description": "Enable the health/PHI entity set (HIPAA)."
+            },
+            "contextual_action": {
+              "type": "string",
+              "enum": ["BLOCK", "ANONYMIZE", "NONE"],
+              "description": "Action for contextual entities (emitters/guardrail_map.CONTEXTUAL_ENTITIES: names, addresses, ages, usernames, URLs), which match ordinary text. Defaults to `action`."
+            }
+          }
+        },
+        "denied_topics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "content_filters": {
+          "type": "object",
+          "description": "Strength per filter class.",
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ]
+          }
+        }
+      }
+    },
+    "policies": {
+      "type": "object",
+      "required": [
+        "scps",
+        "rcps"
+      ],
+      "additionalProperties": false,
+      "description": "Service/resource control policy statement sets to attach. Values are statement-pack ids resolved from the baseline library.",
+      "properties": {
+        "scps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rcps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "required": [
+        "retention_days",
+        "model_invocation_logging",
+        "tenant_log_split",
+        "most_sensitive_store"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "retention_days": {
+          "type": "integer",
+          "minimum": 90
+        },
+        "model_invocation_logging": {
+          "type": "boolean"
+        },
+        "tenant_log_split": {
+          "type": "boolean",
+          "description": "Per-tenant encrypted copy via the log splitter."
+        },
+        "most_sensitive_store": {
+          "type": "boolean",
+          "description": "ACLs-disabled, SOC/OEB-only raw store (holds blocked content / ePHI)."
+        },
+        "cloudtrail_data_events": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "services": {
+      "type": "object",
+      "required": [
+        "allow",
+        "hipaa_eligible_only"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Enclave service allow-list (enforced in SCP)."
+        },
+        "hipaa_eligible_only": {
+          "type": "boolean",
+          "description": "When true, every production service in-boundary must be HIPAA-eligible (PHI tenants share the prod account)."
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "control_catalogs",
+        "crm_profile"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "control_catalogs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "nist-800-53-rev5-low",
+              "nist-800-53-rev5-moderate",
+              "nist-800-53-rev5-high",
+              "hipaa-security-rule",
+              "nist-800-66-rev2",
+              "hitrust-csf-v11",
+              "fda-21-cfr-part-11",
+              "dod-srg-il2",
+              "dod-srg-il4",
+              "dod-srg-il5"
+            ]
+          }
+        },
+        "crm_profile": {
+          "type": "string",
+          "description": "Which responsibility-matrix workbook profile to emit."
+        },
+        "conmon": {
+          "type": "boolean",
+          "description": "Emit the continuous-monitoring evidence scaffold."
+        },
+        "conformance_packs": {
+          "type": "array",
+          "description": "AWS Config conformance packs (awslabs/aws-config-rules) deployed for detective coverage; templates pinned in sources/conformance-packs/. Unions across composed baselines.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "CMMC-2.0-Level-2",
+              "FDA-21CFR-Part-11",
+              "FedRAMP-HighPart1",
+              "FedRAMP-HighPart2",
+              "FedRAMP-Low",
+              "FedRAMP-Moderate",
+              "HIPAA-Security",
+              "NIST-800-53-rev-5"
+            ]
+          }
+        }
+      }
+    },
+    "vector_store": {
+      "type": "string",
+      "enum": [
+        "aurora-postgresql",
+        "opensearch-serverless"
+      ],
+      "description": "First-release default is aurora-postgresql; opensearch-serverless is deferred pending FedRAMP confirmation."
+    },
+    "token_control": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "default_timezone",
+        "fail_closed_hours"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "default_timezone": {
+          "type": "string"
+        },
+        "fail_closed_hours": {
+          "type": "number",
+          "description": "Hours the token meter heartbeat may be stale before the gateway interceptor denies every tool call (fail closed). A ledger read error denies immediately."
+        },
+        "team_claim": {
+          "type": "string",
+          "description": "JWT claim naming the caller's team for the per-team budget (first value if a list). Default cognito:groups."
+        },
+        "per_user_daily_tokens": {
+          "type": "integer"
+        },
+        "per_team_monthly_tokens": {
+          "type": "integer"
+        }
+      }
+    },
+    "emit": {
+      "type": "object",
+      "description": "Which emitters to run and emitter-specific knobs. Not a control axis.",
+      "additionalProperties": false,
+      "properties": {
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "terraform",
+              "cdk"
+            ]
+          }
+        },
+        "terraform": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "backend": {
+              "type": "string",
+              "enum": [
+                "s3",
+                "local"
+              ]
+            }
+          }
+        },
+        "cdk": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "language": {
+              "type": "string",
+              "enum": [
+                "typescript",
+                "python"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

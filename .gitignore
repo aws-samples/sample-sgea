@@ -1,0 +1,25 @@
+# generated
+build/
+.sandbox/
+**/.terraform/
+**/.terraform.lock.hcl
+**/*.tfstate*
+**/tfplan
+**/backend_override.tf
+**/network.auto.tfvars.json
+**/sandbox.auto.tfvars.json
+examples/sample-agent/infra/.sgea-modules
+catalog/_nda/
+__pycache__/
+# AWS Artifact reports (downloaded under the AWS Artifact agreement) and builder output from them — never commit
+sources/artifact/
+aws_documents/
+# local tooling / OS / build artefacts
+.claude/
+.DS_Store
+.pytest_cache/
+*.egg-info/
+**/node_modules/
+**/cdk.out/
+**/cdk.context.json
+examples/sample-agent/infra/builds/

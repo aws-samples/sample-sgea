@@ -1,0 +1,39 @@
+Secure GenAI Enclave Accelerator (SGEA)
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+This project is licensed under the MIT No Attribution license (see LICENSE). It includes or is derived from the
+following third-party material, which remains under its own terms:
+
+1. AWS Config conformance pack templates
+   Files:    sources/conformance-packs/*.yaml (copied verbatim); rule names and parameters in catalog/*.json
+   Source:   https://github.com/awslabs/aws-config-rules (aws-config-conformance-packs/),
+             pinned commit recorded in sources/.conformance-packs-commit and in each catalog's sources[].pack_url
+   License:  CC0 1.0 Universal (public domain dedication), per the upstream LICENSE at the pinned commit;
+             a copy is in sources/conformance-packs/LICENSE. No attribution is required; this notice records
+             the provenance. The catalog data derived from the templates (rule names, parameters) is covered
+             by the same dedication.
+
+2. NIST OSCAL content
+   Files:    sources/nist-oscal/*.json (NIST SP 800-53 Rev 5 LOW / MODERATE baseline profiles)
+   Source:   https://github.com/usnistgov/oscal-content, pinned commit recorded in sources/.nist-oscal-commit
+   License:  work of the U.S. Government (National Institute of Standards and Technology); not subject to copyright
+             protection in the United States (public domain)
+
+3. Terraform provider schema slice
+   Files:    sources/provider-schema/bedrock-agentcore-slice.json
+   Source:   an extract of `terraform providers schema -json` for the HashiCorp providers and versions listed in the
+             file's "providers" key (hashicorp/aws, hashicorp/awscc, ...)
+   License:  the schemas describe the upstream providers, which are distributed under the Mozilla Public License 2.0;
+             see the upstream provider repositories
+
+4. AWS documentation facts
+   Files:    catalog/*.json (control ids and descriptions per Config rule), catalog/_services-in-scope.json,
+             catalog/_regions.json
+   Source:   public AWS documentation pages (Config "Operational Best Practices" control mappings, AWS Services in
+             Scope, AWS Regional Services List, AWS GovCloud (US) User Guide, Amazon Bedrock documentation); the
+             URLs are recorded in the catalogs
+   License:  see the terms of the AWS documentation
+
+Dependencies installed at build or deploy time (PyYAML, AWS CDK and the npm packages in
+emitters/cdk_app/package-lock.json, Terraform providers and terraform-aws-modules registry modules) are not
+redistributed in this repository and are governed by their own licenses.

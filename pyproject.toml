@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools==84.2.1"]   # exact pins: reproducible, reviewed installs
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sgea"
+version = "0.1.0"
+description = "Secure GenAI Enclave Accelerator — control-profile-driven IaC generator"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT-0" }
+authors = [{ name = "Amazon Web Services" }]
+dependencies = ["pyyaml==6.0.3"]   # rule dispositions / known findings (export, check)
+
+[project.optional-dependencies]
+# Structural profile validation against profiles/_schema.json.
+schema = ["jsonschema==4.25.0"]
+# Per-baseline service-configuration catalog builder (tools/build_catalog.py).
+catalog = ["pyyaml==6.0.3", "openpyxl==3.1.5"]
+# Test toolchain.
+dev = ["pytest==9.0.2", "jsonschema==4.25.0", "openpyxl==3.1.5"]
+
+[project.scripts]
+sgea = "sgea:main"
+
+[tool.setuptools]
+# The generator is a single module; the emitters are a small package.
+# baselines/, profiles/ and verticals/ are USER-EDITED working data and are
+# intentionally NOT packaged — the CLI discovers them at the toolkit root
+# (see toolkit_root() in sgea.py). Install the CLI, then run it from inside a
+# toolkit checkout, or set SGEA_ROOT.
+py-modules = ["sgea"]
+packages = ["emitters"]
+
+[tool.setuptools.package-data]
+# The emitters copy these into every export (Lambda sources, the CDK app); without them an installed CLI
+# could only run against a toolkit checkout.
+emitters = ["lambda/*.py", "cdk_app/*.json", "cdk_app/bin/*.ts", "cdk_app/lib/*.ts", "cdk_app/lib/constructs/*.ts"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,125 @@
+{
+  "_doc": "Sandbox validation runs (profile x engine) summarized from the as-deployed configuration reports, which are not part of the public distribution. Read by tools/framework_docs.py (public mode).",
+  "runs": [
+    {
+      "profile": "dod-il2-commercial",
+      "engine": "cdk",
+      "baselines": [
+        "fedramp-moderate",
+        "dod-il2"
+      ],
+      "collected_at": "2026-10-16 14:30 UTC",
+      "observed": 168,
+      "checked": 80,
+      "meets": 79
+    },
+    {
+      "profile": "dod-il2-commercial",
+      "engine": "terraform",
+      "baselines": [
+        "fedramp-moderate",
+        "dod-il2"
+      ],
+      "collected_at": "2026-10-16 08:39 UTC",
+      "observed": 152,
+      "checked": 78,
+      "meets": 77
+    },
+    {
+      "profile": "fedramp-low-commercial",
+      "engine": "cdk",
+      "baselines": [
+        "fedramp-low"
+      ],
+      "collected_at": "2026-10-16 18:20 UTC",
+      "observed": 157,
+      "checked": 81,
+      "meets": 79
+    },
+    {
+      "profile": "fedramp-low-commercial",
+      "engine": "terraform",
+      "baselines": [
+        "fedramp-low"
+      ],
+      "collected_at": "2026-10-16 17:30 UTC",
+      "observed": 151,
+      "checked": 78,
+      "meets": 76
+    },
+    {
+      "profile": "fedramp-moderate-hipaa-commercial",
+      "engine": "cdk",
+      "baselines": [
+        "fedramp-moderate",
+        "hipaa"
+      ],
+      "collected_at": "2026-10-16 15:29 UTC",
+      "observed": 159,
+      "checked": 80,
+      "meets": 79
+    },
+    {
+      "profile": "fedramp-moderate-hipaa-commercial",
+      "engine": "terraform",
+      "baselines": [
+        "fedramp-moderate",
+        "hipaa"
+      ],
+      "collected_at": "2026-10-16 03:35 UTC",
+      "observed": 152,
+      "checked": 79,
+      "meets": 77
+    },
+    {
+      "profile": "fedramp-moderate-hipaa-hitrust-commercial",
+      "engine": "cdk",
+      "baselines": [
+        "fedramp-moderate",
+        "hipaa",
+        "hitrust"
+      ],
+      "collected_at": "2026-10-21 20:24 UTC",
+      "observed": 163,
+      "checked": 74,
+      "meets": 72
+    },
+    {
+      "profile": "fedramp-moderate-hipaa-hitrust-commercial",
+      "engine": "terraform",
+      "baselines": [
+        "fedramp-moderate",
+        "hipaa",
+        "hitrust"
+      ],
+      "collected_at": "2026-10-21 22:35 UTC",
+      "observed": 145,
+      "checked": 72,
+      "meets": 70
+    },
+    {
+      "profile": "fedramp-moderate-part11-commercial",
+      "engine": "cdk",
+      "baselines": [
+        "fedramp-moderate",
+        "fda-21-cfr-part-11"
+      ],
+      "collected_at": "2026-10-16 22:06 UTC",
+      "observed": 159,
+      "checked": 80,
+      "meets": 79
+    },
+    {
+      "profile": "fedramp-moderate-part11-commercial",
+      "engine": "terraform",
+      "baselines": [
+        "fedramp-moderate",
+        "fda-21-cfr-part-11"
+      ],
+      "collected_at": "2026-10-16 19:19 UTC",
+      "observed": 203,
+      "checked": 79,
+      "meets": 77
+    }
+  ]
+}

@@ -1,0 +1,456 @@
+# SGEA-INFERRED service controls — NOT AWS-published. Requires ISSO review.
+#
+# AWS publishes no Config rules for Bedrock / AgentCore and no Customer
+# Compliance Guide for AgentCore. These entries fill that gap by inference,
+# grounded three ways so they stay checkable:
+#
+#   resource / attribute  validated against the pinned provider schema
+#                         (sources/provider-schema/bedrock-agentcore-slice.json);
+#                         the catalog build FAILS if a field does not exist.
+#   topic                 an AWS Customer Compliance Guide security topic; its
+#                         control IDs per framework come from AWS's own
+#                         topic->control mapping sheet, not from SGEA.
+#   analog_config_rule    the AWS Config rule that enforces the same property on
+#                         an analogous service (e.g. lambda-inside-vpc for
+#                         "runtime runs in VPC"). Its per-framework control
+#                         mappings (incl. HIPAA sections, CMMC practices) are
+#                         inherited from the baseline's conformance-pack mapping.
+#
+# require: {op, value} where op is one of
+#   equals | one_of | not_equals | set | min | max
+# value_from: a resolved-config path supplying the value (e.g. logging.retention_days)
+# any_of: [attr, ...] — instead of `attribute`: passes if ANY listed attribute meets `require`
+# where: {attr: value} — only resource instances matching these attributes are checked
+# cfn: {type, attribute, require?, where?} — CloudFormation equivalent for `sgea check --cfn`
+#      when the Terraform shape differs (awscc_* map mechanically and need no entry)
+# applies_when: optional resolved-config condition: 'path contains a|b', 'path == v', 'path != v',
+#              'path' (truthy), joined with ' && ' (e.g. guardrails.levels contains gateway_tool_path)
+# level: required | recommended
+# scope: enclave (default; SGEA emits the resource) | per-app (created by tenant
+#        apps, e.g. Bedrock Agents, code interpreters; `sgea check` reports these
+#        as N/A-APP when absent — enforce them in the app's own IaC review)
+
+controls:
+  # ---------------- AgentCore Runtime ----------------
+  - id: SGEA-AC-RT-01
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_runtime
+    attribute: network_configuration.network_mode
+    require: {op: equals, value: VPC}
+    topic: Boundary and System Partitioning
+    analog_config_rule: lambda-inside-vpc
+    level: required
+    rationale: Agent runtimes execute customer code and reach enclave data; PUBLIC mode puts them outside the enclave boundary.
+  - id: SGEA-AC-RT-02
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_runtime
+    attribute: network_configuration.network_mode_config.subnets
+    require: {op: set}
+    topic: Network Configuration
+    analog_config_rule: lambda-inside-vpc
+    level: required
+    rationale: VPC mode must pin private enclave subnets (no IGW route).
+  - id: SGEA-AC-RT-03
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_runtime
+    attribute: network_configuration.network_mode_config.security_groups
+    require: {op: set}
+    topic: Firewall and Network Monitoring
+    analog_config_rule: vpc-sg-open-only-to-authorized-ports
+    level: required
+    rationale: Egress must be restricted to enclave VPC endpoints.
+  - id: SGEA-AC-RT-04
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_runtime
+    attribute: authorizer_configuration.custom_jwt_authorizer
+    require: {op: set}
+    topic: Authentication and Single Sign-on (SSO)
+    level: required
+    rationale: Inbound invocation must authenticate end users against the organization IdP so actions are attributable per user (also required by per-user token control).
+  - id: SGEA-AC-RT-05
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_runtime
+    attribute: role_arn
+    require: {op: set}
+    topic: Access Control
+    analog_config_rule: iam-policy-no-statements-with-admin-access
+    level: required
+    rationale: Execution role scoped to the tenant's resources only; no admin or wildcard actions.
+  - id: SGEA-AC-RT-06
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_runtime
+    attribute: lifecycle_configuration.idle_runtime_session_timeout
+    require: {op: max, value: 900}
+    topic: Remote Access
+    extra_controls: {"NIST 800-53 Rev5": ["AC-12", "SC-10"]}
+    level: required
+    rationale: FedRAMP SC-10 parameter is <=15 min for user sessions; idle agent sessions holding user context must terminate within that.
+  - id: SGEA-AC-RT-07
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_runtime
+    attribute: request_header_configuration.request_header_allowlist
+    require: {op: set}
+    topic: Data Flow Enforcement
+    level: recommended
+    rationale: Forward only explicitly allow-listed headers into agent code.
+  - id: SGEA-AC-RT-08
+    service: bedrock-agentcore
+    resource: aws_ecr_repository
+    attribute: image_scanning_configuration.scan_on_push
+    require: {op: equals, value: true}
+    topic: Vulnerability Monitoring and Scanning
+    analog_config_rule: ecr-private-image-scanning-enabled
+    level: required
+    rationale: Runtime container images come from a private ECR repo with scanning.
+  - id: SGEA-AC-RT-09
+    service: bedrock-agentcore
+    resource: aws_ecr_repository
+    attribute: image_tag_mutability
+    require: {op: equals, value: IMMUTABLE}
+    topic: Configuration Baselines and Software
+    level: required
+    rationale: Immutable tags make the deployed agent image traceable to a reviewed build (CM-2/CM-3).
+
+  # ---------------- AgentCore Gateway (tool path) ----------------
+  - id: SGEA-AC-GW-01
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_gateway
+    attribute: authorizer_type
+    require: {op: one_of, value: [CUSTOM_JWT, AWS_IAM]}
+    topic: Authentication and Single Sign-on (SSO)
+    level: required
+    rationale: Tool calls must be authenticated; an unauthenticated gateway exposes every target.
+  - id: SGEA-AC-GW-02
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_gateway
+    attribute: kms_key_arn
+    require: {op: set}
+    topic: Encryption-at-Rest
+    analog_config_rule: dynamodb-table-encrypted-kms
+    level: required
+    rationale: Customer-managed key for gateway configuration and stored credentials.
+  - id: SGEA-AC-GW-03
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_gateway
+    any_of: [policy_engine_configuration, interceptor_configurations]
+    require: {op: set}
+    topic: Network Access and Resource/Attribute-Based Access Policies
+    level: required
+    applies_when: guardrails.levels contains gateway_tool_path
+    rationale: The SGEA gateway_tool_path guardrail level is enforced on tool invocations by the AgentCore policy engine, or (where AWS does not offer it, e.g. GovCloud) by the SGEA tool-policy REQUEST interceptor Lambda.
+  - id: SGEA-TC-01
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_gateway
+    attribute: interceptor_configurations
+    require: {op: set}
+    topic: Network Access and Resource/Attribute-Based Access Policies
+    level: required
+    applies_when: token_control.enabled && services.allow contains bedrock-agentcore
+    rationale: Per-user daily / per-team monthly token budgets are enforced on the enclave tool path by the SGEA gateway REQUEST interceptor, which fails closed when the ledger is unreadable or the meter is stale.
+  - id: SGEA-TC-02
+    service: bedrock
+    resource: aws_cloudwatch_log_subscription_filter
+    attribute: destination_arn
+    require: {op: set}
+    cfn: {type: AWS::Logs::SubscriptionFilter, attribute: DestinationArn}
+    topic: Log Retention
+    level: required
+    applies_when: token_control.enabled && logging.model_invocation_logging
+    rationale: The token ledger is credited from the enclave's Bedrock model-invocation logs, so budget enforcement reflects every logged model call.
+  - id: SGEA-AC-GW-04
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_policy_engine
+    attribute: encryption_key_arn
+    require: {op: set}
+    topic: Key Management
+    analog_config_rule: dynamodb-table-encrypted-kms
+    level: required
+    applies_when: guardrails.levels contains gateway_tool_path && partition != aws-us-gov
+    rationale: Policy definitions encrypted with the enclave CMK.
+  - id: SGEA-AC-GW-05
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_gateway_rate_limit
+    require: {op: set}
+    topic: Auto-Scaling
+    extra_controls: {"NIST 800-53 Rev5": ["SC-5"]}
+    level: recommended
+    rationale: Rate-limit tool calls to bound runaway agents (denial-of-service protection).
+
+  # ---------------- AgentCore Memory ----------------
+  - id: SGEA-AC-MEM-01
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_memory
+    attribute: encryption_key_arn
+    require: {op: set}
+    topic: Encryption-at-Rest
+    analog_config_rule: dynamodb-table-encrypted-kms
+    level: required
+    rationale: Agent memory holds conversation content (PII/PHI); encrypt with the enclave CMK.
+  - id: SGEA-AC-MEM-02
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_memory
+    attribute: event_expiry_duration
+    require: {op: set}
+    topic: Data Retention
+    level: required
+    rationale: Set an explicit expiry (days) no longer than the organization's data-retention schedule for conversational data.
+  - id: SGEA-AC-MEM-03
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_memory
+    attribute: memory_execution_role_arn
+    require: {op: set}
+    topic: Access Control
+    analog_config_rule: iam-policy-no-statements-with-admin-access
+    level: recommended
+    rationale: Dedicated least-privilege role for memory strategies that invoke models.
+
+  # ---------------- AgentCore Code Interpreter / Browser ----------------
+  - id: SGEA-AC-CI-01
+    scope: per-app
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_code_interpreter_custom
+    attribute: network_configuration.network_mode
+    require: {op: one_of, value: [SANDBOX, VPC]}
+    topic: Boundary and System Partitioning
+    analog_config_rule: sagemaker-notebook-no-direct-internet-access
+    level: required
+    rationale: Model-generated code must not run with direct internet access.
+  - id: SGEA-AC-BR-01
+    scope: per-app
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_browser_custom
+    attribute: network_configuration.network_mode
+    require: {op: equals, value: VPC}
+    topic: Boundary and System Partitioning
+    analog_config_rule: sagemaker-notebook-no-direct-internet-access
+    level: required
+    rationale: Browser sessions egress only through enclave-controlled network paths (proxy / firewall).
+
+  # ---------------- AgentCore Identity ----------------
+  - id: SGEA-AC-ID-01
+    cfn: {type: Custom::SgeaTokenVaultCmk, attribute: Create, require: {op: contains, value: CustomerManagedKey}}
+    service: bedrock-agentcore
+    resource: aws_bedrockagentcore_token_vault_cmk
+    attribute: kms_configuration.key_type
+    require: {op: equals, value: CustomerManagedKey}
+    topic: Key Management
+    analog_config_rule: secretsmanager-using-cmk
+    level: required
+    rationale: Outbound OAuth tokens and API keys for tools are stored under the enclave CMK.
+  - id: SGEA-AC-ID-02
+    scope: per-app
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_o_auth_2_credential_provider
+    attribute: oauth_2_provider_config_input.custom_oauth_2_provider_config.client_secret_config.secret_id
+    require: {op: set}
+    topic: Authenticator Management
+    analog_config_rule: secretsmanager-rotation-enabled-check
+    level: required
+    rationale: Client secrets referenced from Secrets Manager (rotatable), never inlined in IaC.
+  - id: SGEA-AC-ID-03
+    scope: per-app
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_workload_identity
+    attribute: allowed_resource_oauth_2_return_urls
+    require: {op: set}
+    topic: Data Flow Enforcement
+    level: recommended
+    rationale: Restrict OAuth return URLs to enclave applications.
+  - id: SGEA-AC-ID-04
+    service: bedrock-agentcore
+    resource: awscc_bedrockagentcore_resource_policy
+    attribute: policy
+    require: {op: contains, value: "aws:SourceVpce"}
+    topic: Network Access and Resource/Attribute-Based Access Policies
+    analog_config_rule: lambda-function-public-access-prohibited
+    level: required
+    rationale: The runtime uses OAuth (JWT) inbound auth; AWS requires a wildcard principal and network conditions to restrict it, so invocation is limited to the enclave bedrock-agentcore VPC endpoint (aws:SourceVpce).
+
+  # ---------------- AgentCore observability ----------------
+  - id: SGEA-AC-LOG-01
+    cfn: {type: AWS::Logs::LogGroup, attribute: RetentionInDays}
+    service: bedrock-agentcore
+    resource: aws_cloudwatch_log_group
+    attribute: retention_in_days
+    require: {op: min}
+    value_from: logging.retention_days
+    topic: Log Retention
+    analog_config_rule: cw-loggroup-retention-period-check
+    level: required
+    rationale: AgentCore runtime / gateway / memory log groups retain for the baseline's retention period.
+  - id: SGEA-AC-LOG-02
+    cfn: {type: AWS::Logs::LogGroup, attribute: KmsKeyId}
+    service: bedrock-agentcore
+    resource: aws_cloudwatch_log_group
+    attribute: kms_key_id
+    require: {op: set}
+    topic: Encryption-at-Rest
+    analog_config_rule: cloudwatch-log-group-encrypted
+    level: required
+    rationale: Agent logs and traces can contain prompts and tool payloads (PII/PHI).
+  - id: SGEA-AC-LOG-03
+    cfn: {type: AWS::CloudTrail::Trail, attribute: AdvancedEventSelectors.FieldSelectors}
+    service: bedrock-agentcore
+    resource: aws_cloudtrail
+    attribute: advanced_event_selector.field_selector
+    require: {op: set}
+    topic: Audit Logging
+    analog_config_rule: cloudtrail-s3-dataevents-enabled
+    level: required
+    rationale: Capture bedrock-agentcore data events (InvokeAgentRuntime, tool invocations) for per-user attribution.
+
+  # ---------------- Bedrock (no AWS Config rules exist) ----------------
+  - id: SGEA-BR-01
+    cfn: {type: Custom::SgeaBedrockInvocationLogging, attribute: Create, require: {op: contains, value: textDataDeliveryEnabled}}
+    service: bedrock
+    resource: aws_bedrock_model_invocation_logging_configuration
+    attribute: logging_config.text_data_delivery_enabled
+    require: {op: equals, value: true}
+    topic: Audit Logging
+    analog_config_rule: api-gw-execution-logging-enabled
+    applies_when: logging.model_invocation_logging
+    level: required
+    rationale: Model-invocation logging is the audit record of prompts and completions.
+  - id: SGEA-BR-02
+    cfn: {type: Custom::SgeaBedrockInvocationLogging, attribute: Create, require: {op: contains, value: s3Config}}
+    service: bedrock
+    resource: aws_bedrock_model_invocation_logging_configuration
+    attribute: logging_config.s3_config.bucket_name
+    require: {op: set}
+    topic: Log Retention
+    level: required
+    applies_when: logging.model_invocation_logging
+    rationale: Deliver invocation logs to the most-sensitive log store (encrypted, Object Lock, enclave-only access).
+  - id: SGEA-BR-03
+    service: bedrock
+    resource: awscc_bedrock_enforced_guardrail_configuration
+    attribute: guardrail_identifier
+    require: {op: set}
+    topic: Data Flow Enforcement
+    applies_when: guardrails.levels contains L2_account_baseline
+    level: required
+    rationale: The SGEA L2 account-baseline guardrail level is an account-enforced guardrail applied to every model invocation.
+  - id: SGEA-BR-03a
+    service: bedrock
+    resource: awscc_bedrock_enforced_guardrail_configuration
+    attribute: selective_content_guarding.messages
+    require: {op: equals, value: COMPREHENSIVE}
+    topic: Data Flow Enforcement
+    applies_when: guardrails.levels contains L2_account_baseline
+    level: required
+    rationale: The enforced guardrail evaluates every user message and tool result, so a caller cannot narrow guarding with guardContent tags. System prompts (developer-authored) are SELECTIVE; whole-system-prompt evaluation trips the prompt-attack filter on ordinary agent instructions.
+  - id: SGEA-BR-04
+    service: bedrock
+    resource: aws_bedrock_guardrail
+    attribute: kms_key_arn
+    cfn: {type: AWS::Bedrock::Guardrail, attribute: KmsKeyArn}
+    require: {op: set}
+    topic: Key Management
+    analog_config_rule: dynamodb-table-encrypted-kms
+    level: required
+    rationale: Guardrail configuration (denied topics, regexes) encrypted with the enclave CMK.
+  - id: SGEA-BR-05
+    scope: per-app
+    service: bedrock
+    resource: awscc_bedrock_agent
+    attribute: customer_encryption_key_arn
+    require: {op: set}
+    topic: Encryption-at-Rest
+    analog_config_rule: sagemaker-endpoint-configuration-kms-key-configured
+    level: required
+    rationale: Bedrock Agents session and memory data encrypted with the enclave CMK.
+  - id: SGEA-BR-06
+    scope: per-app
+    service: bedrock
+    resource: awscc_bedrock_agent
+    attribute: guardrail_configuration.guardrail_identifier
+    require: {op: set}
+    topic: Data Flow Enforcement
+    level: required
+    applies_when: guardrails.levels contains L3_tenant_enforced
+    rationale: Every agent carries the tenant guardrail (SGEA L3 tenant-enforced level).
+  - id: SGEA-BR-07
+    scope: per-app
+    service: bedrock
+    resource: awscc_bedrock_agent
+    attribute: idle_session_ttl_in_seconds
+    require: {op: max, value: 900}
+    topic: Remote Access
+    extra_controls: {"NIST 800-53 Rev5": ["AC-12", "SC-10"]}
+    level: required
+    rationale: Same session-termination bound as SGEA-AC-RT-06.
+  - id: SGEA-BR-08
+    scope: per-app
+    service: bedrock
+    resource: awscc_bedrock_data_source
+    attribute: server_side_encryption_configuration.kms_key_arn
+    require: {op: set}
+    topic: Encryption-at-Rest
+    analog_config_rule: s3-default-encryption-kms
+    level: required
+    rationale: Knowledge-base ingestion intermediates encrypted with the enclave CMK.
+  - id: SGEA-BR-09
+    cfn: {type: AWS::EC2::VPCEndpoint, attribute: PrivateDnsEnabled, where: {VpcEndpointType: Interface}}
+    service: bedrock
+    resource: aws_vpc_endpoint
+    where: {vpc_endpoint_type: Interface}
+    attribute: private_dns_enabled
+    require: {op: equals, value: true}
+    topic: Boundary and System Partitioning
+    analog_config_rule: ec2-instance-no-public-ip
+    level: required
+    rationale: Interface endpoints for bedrock-runtime, bedrock-agent-runtime and bedrock-agentcore keep inference traffic off the internet.
+
+  # ---------------- DoD SCCA (IL4 / IL5) — AWS SCCA on GovCloud reference architecture ----------------
+  - id: SGEA-SCCA-01
+    service: dod-scca
+    resource: aws_networkfirewall_firewall
+    attribute: delete_protection
+    require: {op: equals, value: true}
+    topic: Boundary and System Partitioning
+    applies_when: baselines contains dod-il4|dod-il5
+    level: required
+    cfn: {type: AWS::NetworkFirewall::Firewall, attribute: DeleteProtection}
+    rationale: SCCA VDSS — the enclave boundary is inspected by a protected (non-deletable) AWS Network Firewall.
+  - id: SGEA-SCCA-02
+    service: dod-scca
+    resource: aws_networkfirewall_firewall_policy
+    attribute: firewall_policy.stateful_default_actions
+    require: {op: contains, value: "aws:drop_strict"}
+    topic: Firewall and Network Monitoring
+    applies_when: baselines contains dod-il4|dod-il5
+    level: required
+    cfn: {type: AWS::NetworkFirewall::FirewallPolicy, attribute: FirewallPolicy.StatefulDefaultActions}
+    rationale: SCCA VDSS default-deny — traffic not matching an allow rule is dropped.
+  - id: SGEA-SCCA-03
+    service: dod-scca
+    resource: aws_networkfirewall_logging_configuration
+    attribute: logging_configuration
+    require: {op: set}
+    topic: Audit Logging
+    applies_when: baselines contains dod-il4|dod-il5
+    level: required
+    cfn: {type: AWS::NetworkFirewall::LoggingConfiguration, attribute: LoggingConfiguration}
+    rationale: SCCA VDMS — firewall alert and flow logs feed the mission owner's monitoring.
+  - id: SGEA-SCCA-04
+    service: dod-scca
+    resource: aws_flow_log
+    attribute: traffic_type
+    require: {op: equals, value: ALL}
+    topic: Firewall and Network Monitoring
+    analog_config_rule: vpc-flow-logs-enabled
+    applies_when: baselines contains dod-il4|dod-il5
+    level: required
+    cfn: {type: AWS::EC2::FlowLog, attribute: TrafficType}
+    rationale: SCCA VDMS — VPC flow logs for all enclave traffic.
+  - id: SGEA-SCCA-05
+    service: dod-scca
+    resource: aws_securityhub_standards_subscription
+    attribute: standards_arn
+    require: {op: contains, value: "nist-800-53"}
+    topic: Security Monitoring and Incident Response
+    applies_when: baselines contains dod-il4|dod-il5
+    level: required
+    cfn: {type: AWS::SecurityHub::Standard, attribute: StandardsArn}
+    rationale: SCCA VDMS — continuous NIST 800-53 posture assessment.
+

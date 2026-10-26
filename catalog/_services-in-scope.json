@@ -1,0 +1,159 @@
+{
+  "_doc": "AWS Services in Scope (sources/public/*.html): authorization status per SGEA service id and program column. '\u2713' = authorized; any other text (e.g. 'Independent Assessment') or '' = NOT authorized at that level. Consumed by sgea validate.",
+  "services": {
+    "bedrock": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
+    },
+    "bedrock-agentcore": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "Independent Assessment",
+      "DoD CSP SRG IL4 (GovCloud)": "Independent Assessment",
+      "DoD CSP SRG IL5 (GovCloud)": "Independent Assessment",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "",
+      "HIPAA Eligible": "\u2713"
+    },
+    "aurora-postgresql": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
+    },
+    "kms": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
+    },
+    "cloudwatch": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
+    },
+    "cloudtrail": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
+    },
+    "s3": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
+    },
+    "lambda": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
+    },
+    "dynamodb": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
+    },
+    "sns": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
+    },
+    "eventbridge": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
+    },
+    "firehose": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
+    },
+    "cognito": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "",
+      "HIPAA Eligible": "\u2713"
+    },
+    "elasticache": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
+    }
+  }
+}

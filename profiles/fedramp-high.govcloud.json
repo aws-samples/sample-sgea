@@ -1,0 +1,20 @@
+{
+  "profile": {
+    "id": "fedramp-high-govcloud",
+    "name": "FedRAMP High (GovCloud)",
+    "description": "Scaffold profile for FedRAMP High in AWS GovCloud (US). NOT yet validated — standing it up is its own effort (different partition, endpoints, service availability, stricter control set). The emitter will refuse to emit it as verified until it is marked verified.",
+    "extends": ["fedramp-moderate", "fedramp-high"],
+    "reference_adopter": ""
+  },
+  "baselines": ["fedramp-high"],
+  "emit": {
+    "targets": ["terraform", "cdk"],
+    "terraform": { "backend": "s3" },
+    "cdk": { "language": "typescript" }
+  },
+  "overrides": {
+    "services": {
+      "allow": ["bedrock", "bedrock-agentcore", "aurora-postgresql", "kms", "cloudwatch", "cloudtrail", "s3", "lambda", "dynamodb", "sns", "eventbridge"]
+    }
+  }
+}

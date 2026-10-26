@@ -1,0 +1,48 @@
+{
+  "_baseline": "fedramp-low",
+  "_doc": "FedRAMP Low baseline fragment, commercial partition. A relaxation of the Moderate baseline for low-impact workloads: same enclave architecture and isolation model, but shorter log retention, lighter content-filter strength, and the Low control catalog. Tenant isolation, guardrail enforcement levels, and the data-perimeter policy packs are KEPT — multi-tenancy and the inherited-controls model do not change with impact level; only the control stringency does.",
+  "partition": "aws",
+  "regions": {
+    "primary": "us-east-1",
+    "allowed": ["us-east-1", "us-east-2", "us-west-2"],
+    "inference_profile_geo": "us"
+  },
+  "guardrails": {
+    "tier": "standard",
+    "levels": ["L1_org", "L2_account_baseline", "L3_tenant_enforced", "gateway_tool_path"],
+    "pii": { "mode": "block", "action": "BLOCK", "phi_entities": false, "contextual_action": "ANONYMIZE" },
+    "denied_topics": [],
+    "content_filters": {
+      "HATE": "MEDIUM", "INSULTS": "MEDIUM", "SEXUAL": "MEDIUM",
+      "VIOLENCE": "MEDIUM", "MISCONDUCT": "LOW", "PROMPT_ATTACK": "HIGH"
+    }
+  },
+  "policies": {
+    "scps": ["bre-scp-01-region-lockdown", "bre-scp-02-bedrock-surface", "bre-scp-03-inference-profile", "bre-scp-04-guardrail-enforce", "bre-scp-06-tenant-isolation", "bre-scp-07-model-allowlist"],
+    "rcps": ["rcp-01-identity-perimeter"]
+  },
+  "logging": {
+    "retention_days": 90,
+    "model_invocation_logging": true,
+    "tenant_log_split": true,
+    "most_sensitive_store": true,
+    "cloudtrail_data_events": ["bedrock", "s3-enclave-buckets"]
+  },
+  "services": {
+    "allow": ["bedrock", "bedrock-agentcore", "aurora-postgresql", "kms", "cloudwatch", "cloudtrail", "s3", "lambda", "dynamodb", "sns", "eventbridge", "firehose", "cognito", "elasticache"],
+    "hipaa_eligible_only": false
+  },
+  "evidence": {
+    "control_catalogs": ["nist-800-53-rev5-low"], "conformance_packs": ["FedRAMP-Low"],
+    "crm_profile": "fedramp-low",
+    "conmon": true
+  },
+  "vector_store": "aurora-postgresql",
+  "token_control": {
+    "enabled": true,
+    "default_timezone": "America/New_York",
+    "fail_closed_hours": 4,
+    "per_user_daily_tokens": 500000,
+    "per_team_monthly_tokens": 50000000
+  }
+}

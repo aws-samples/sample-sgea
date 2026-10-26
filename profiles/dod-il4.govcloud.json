@@ -1,0 +1,20 @@
+{
+  "profile": {
+    "id": "dod-il4-govcloud",
+    "name": "DoD IL4 (GovCloud)",
+    "description": "Scaffold profile for DoD SRG Impact Level 4 (CUI) in AWS GovCloud (US). NOT yet validated — standing it up is its own effort (GovCloud partition, DoD SRG control set and personnel requirements, DoD Provisional Authorization scope). The emitter refuses it as verified until it is marked verified.",
+    "extends": ["fedramp-moderate", "dod-il4"],
+    "reference_adopter": ""
+  },
+  "baselines": ["dod-il4"],
+  "emit": {
+    "targets": ["terraform", "cdk"],
+    "terraform": { "backend": "s3" },
+    "cdk": { "language": "typescript" }
+  },
+  "overrides": {
+    "services": {
+      "allow": ["bedrock", "bedrock-agentcore", "aurora-postgresql", "kms", "cloudwatch", "cloudtrail", "s3", "lambda", "dynamodb", "sns", "eventbridge"]
+    }
+  }
+}

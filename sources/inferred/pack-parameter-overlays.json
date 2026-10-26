@@ -1,0 +1,7 @@
+{
+ "_doc": "SGEA-authored: InputParameters injected into AWS's pinned conformance-pack rules at export (both emitters), where the AWS pack leaves a rule unparameterized and the rule's result then depends on customer-specific values. Each entry: rule name -> {parameter: value, _reason}. The pinned templates in sources/conformance-packs/ are not modified; the overlay is applied to the copies the emitters deploy.",
+ "s3-bucket-policy-grantee-check": {
+  "servicePrincipals": "logging.s3.amazonaws.com,cloudtrail.amazonaws.com,config.amazonaws.com,bedrock.amazonaws.com",
+  "_reason": "CMMC 2.0 L2 pack ships the rule with no allowed grantees, so every enclave log store (granted only to the AWS logging services that write to it) is NON_COMPLIANT. These are the service principals the enclave bucket policies grant (S3 server-access logging, CloudTrail, AWS Config, Bedrock invocation logging)."
+ }
+}

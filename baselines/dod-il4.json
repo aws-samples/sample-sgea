@@ -1,0 +1,33 @@
+{
+  "_baseline": "dod-il4",
+  "_doc": "DoD SRG Impact Level 4 (IL4) baseline fragment. For Controlled Unclassified Information (CUI) for DoD mission owners. Builds on FedRAMP Moderate+ and requires AWS GovCloud (US). NOT a config flip of a commercial baseline: the partition change moves endpoints, ARNs and service availability, and IL4 adds DoD-specific control and personnel requirements on top of FedRAMP Moderate. Treat standing this baseline up as its own effort — the values here are a scaffold slot, flagged for validation against AWS GovCloud service availability, the DoD SRG, and the AWS DoD Provisional Authorization (PA) scope in AWS Artifact. Verify every service in 'allow' is in scope for IL4 in GovCloud before use.",
+  "_status": "scaffold-unverified",
+  "partition": "aws-us-gov",
+  "regions": {
+    "primary": "us-gov-west-1",
+    "allowed": ["us-gov-west-1", "us-gov-east-1"],
+    "inference_profile_geo": "us-gov"
+  },
+  "guardrails": {
+    "tier": "standard-plus",
+    "levels": ["L1_org", "L2_account_baseline", "L3_tenant_enforced", "gateway_tool_path"],
+    "pii": { "mode": "block", "action": "BLOCK", "phi_entities": false, "contextual_action": "ANONYMIZE" },
+    "denied_topics": [],
+    "content_filters": {
+      "HATE": "HIGH", "INSULTS": "HIGH", "SEXUAL": "HIGH",
+      "VIOLENCE": "HIGH", "MISCONDUCT": "HIGH", "PROMPT_ATTACK": "HIGH"
+    }
+  },
+  "logging": {
+    "retention_days": 1095,
+    "model_invocation_logging": true,
+    "tenant_log_split": true,
+    "most_sensitive_store": true,
+    "cloudtrail_data_events": ["bedrock", "s3-enclave-buckets"]
+  },
+  "evidence": {
+    "control_catalogs": ["nist-800-53-rev5-moderate", "dod-srg-il4"], "conformance_packs": ["NIST-800-53-rev-5", "CMMC-2.0-Level-2"],
+    "crm_profile": "dod-il4",
+    "conmon": true
+  }
+}

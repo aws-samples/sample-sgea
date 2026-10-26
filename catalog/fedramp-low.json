@@ -1,0 +1,5203 @@
+{
+  "baseline": "fedramp-low",
+  "distribution_note": "Public distribution: AWS Artifact-derived fields removed.",
+  "generated_at": "2026-10-23T14:20:51.090526+00:00",
+  "conformance_packs_commit": "3c4879c18c68ba59f0eb74c588a5c62325675ee4",
+  "sources": [
+    {
+      "pack": "FedRAMP-Low",
+      "pack_url": "https://github.com/awslabs/aws-config-rules/blob/3c4879c18c68ba59f0eb74c588a5c62325675ee4/aws-config-conformance-packs/Operational-Best-Practices-for-FedRAMP-Low.yaml",
+      "control_mapping_url": "https://docs.aws.amazon.com/config/latest/developerguide/operational-best-practices-for-fedramp-low.html"
+    }
+  ],
+  "proxy_note": null,
+  "rule_count": 117,
+  "rules_without_control_mapping": [
+    "rds-cluster-multi-az-enabled"
+  ],
+  "coverage": {
+    "access-keys-rotated": {
+      "status": "customer-prerequisite",
+      "reason": "IAM user access keys; the enclave creates no IAM users (roles only). Landing-zone identity baseline (IAM Identity Center)."
+    },
+    "acm-certificate-expiration-check": {
+      "status": "not-in-enclave",
+      "reason": "No ACM certificates (no load balancers / custom domains)."
+    },
+    "alb-http-to-https-redirection-check": {
+      "status": "not-in-enclave",
+      "reason": "No load balancers."
+    },
+    "alb-waf-enabled": {
+      "status": "not-in-enclave",
+      "reason": "No load balancers."
+    },
+    "api-gw-associated-with-waf": {
+      "status": "not-in-enclave",
+      "reason": "No API Gateway; ingress is the AgentCore Runtime/Gateway (JWT, VPC endpoint)."
+    },
+    "api-gw-execution-logging-enabled": {
+      "status": "not-in-enclave",
+      "reason": "No API Gateway."
+    },
+    "aurora-resources-protected-by-backup-plan": {
+      "status": "checked"
+    },
+    "autoscaling-group-elb-healthcheck-required": {
+      "status": "not-in-enclave",
+      "reason": "No Auto Scaling groups."
+    },
+    "autoscaling-launch-config-public-ip-disabled": {
+      "status": "not-in-enclave",
+      "reason": "No Auto Scaling launch configurations."
+    },
+    "backup-plan-min-frequency-and-min-retention-check": {
+      "status": "checked"
+    },
+    "beanstalk-enhanced-health-reporting-enabled": {
+      "status": "not-in-enclave",
+      "reason": "No Elastic Beanstalk."
+    },
+    "cloud-trail-cloud-watch-logs-enabled": {
+      "status": "checked"
+    },
+    "cloud-trail-encryption-enabled": {
+      "status": "checked"
+    },
+    "cloud-trail-log-file-validation-enabled": {
+      "status": "checked"
+    },
+    "cloudtrail-enabled": {
+      "status": "checked"
+    },
+    "cloudtrail-s3-dataevents-enabled": {
+      "status": "checked"
+    },
+    "cloudwatch-alarm-action-check": {
+      "status": "checked"
+    },
+    "cloudwatch-log-group-encrypted": {
+      "status": "checked"
+    },
+    "cmk-backing-key-rotation-enabled": {
+      "status": "checked"
+    },
+    "codebuild-project-envvar-awscred-check": {
+      "status": "not-in-enclave",
+      "reason": "No CodeBuild."
+    },
+    "codebuild-project-logging-enabled": {
+      "status": "not-in-enclave",
+      "reason": "No CodeBuild."
+    },
+    "codebuild-project-source-repo-url-check": {
+      "status": "not-in-enclave",
+      "reason": "No CodeBuild."
+    },
+    "cw-loggroup-retention-period-check": {
+      "status": "checked"
+    },
+    "db-instance-backup-enabled": {
+      "status": "checked"
+    },
+    "dms-replication-not-public": {
+      "status": "not-in-enclave",
+      "reason": "No DMS."
+    },
+    "dynamodb-autoscaling-enabled": {
+      "status": "checked"
+    },
+    "dynamodb-pitr-enabled": {
+      "status": "checked"
+    },
+    "dynamodb-resources-protected-by-backup-plan": {
+      "status": "checked"
+    },
+    "dynamodb-throughput-limit-check": {
+      "status": "runtime-only",
+      "reason": "Account throughput vs. limit at runtime; the ledger is on-demand."
+    },
+    "ebs-optimized-instance": {
+      "status": "not-in-enclave",
+      "reason": "No EC2 instances."
+    },
+    "ebs-resources-protected-by-backup-plan": {
+      "status": "not-in-enclave",
+      "reason": "No EBS volumes."
+    },
+    "ebs-snapshot-public-restorable-check": {
+      "status": "checked"
+    },
+    "ec2-imdsv2-check": {
+      "status": "not-in-enclave",
+      "reason": "No EC2 instances."
+    },
+    "ec2-instance-detailed-monitoring-enabled": {
+      "status": "not-in-enclave",
+      "reason": "No EC2 instances."
+    },
+    "ec2-instance-managed-by-systems-manager": {
+      "status": "not-in-enclave",
+      "reason": "No EC2 instances."
+    },
+    "ec2-instance-no-public-ip": {
+      "status": "not-in-enclave",
+      "reason": "No EC2 instances."
+    },
+    "ec2-instance-profile-attached": {
+      "status": "not-in-enclave",
+      "reason": "No EC2 instances."
+    },
+    "ec2-instances-in-vpc": {
+      "status": "not-in-enclave",
+      "reason": "No EC2 instances."
+    },
+    "ec2-managedinstance-association-compliance-status-check": {
+      "status": "not-in-enclave",
+      "reason": "No EC2 instances / SSM managed nodes in the enclave."
+    },
+    "ec2-managedinstance-patch-compliance-status-check": {
+      "status": "not-in-enclave",
+      "reason": "No EC2 instances / SSM managed nodes in the enclave."
+    },
+    "ec2-resources-protected-by-backup-plan": {
+      "status": "not-in-enclave",
+      "reason": "No EC2 instances."
+    },
+    "ec2-stopped-instance": {
+      "status": "not-in-enclave",
+      "reason": "No EC2 instances."
+    },
+    "ec2-volume-inuse-check": {
+      "status": "not-in-enclave",
+      "reason": "No EBS volumes."
+    },
+    "ecs-task-definition-memory-hard-limit": {
+      "status": "not-in-enclave",
+      "reason": "No ECS."
+    },
+    "ecs-task-definition-user-for-host-mode-check": {
+      "status": "not-in-enclave",
+      "reason": "No ECS."
+    },
+    "efs-resources-protected-by-backup-plan": {
+      "status": "not-in-enclave",
+      "reason": "No EFS."
+    },
+    "elastic-beanstalk-managed-updates-enabled": {
+      "status": "not-in-enclave",
+      "reason": "No Elastic Beanstalk."
+    },
+    "elasticache-redis-cluster-automatic-backup-check": {
+      "status": "tenant",
+      "reason": "ElastiCache is allowed for tenants; the enclave creates no cache."
+    },
+    "elasticsearch-in-vpc-only": {
+      "status": "not-in-enclave",
+      "reason": "No OpenSearch."
+    },
+    "elb-cross-zone-load-balancing-enabled": {
+      "status": "not-in-enclave",
+      "reason": "No load balancers."
+    },
+    "elb-deletion-protection-enabled": {
+      "status": "not-in-enclave",
+      "reason": "No load balancers."
+    },
+    "elb-logging-enabled": {
+      "status": "not-in-enclave",
+      "reason": "No load balancers."
+    },
+    "elb-tls-https-listeners-only": {
+      "status": "not-in-enclave",
+      "reason": "No load balancers."
+    },
+    "emr-master-no-public-ip": {
+      "status": "not-in-enclave",
+      "reason": "No EMR."
+    },
+    "fsx-resources-protected-by-backup-plan": {
+      "status": "not-in-enclave",
+      "reason": "No FSx."
+    },
+    "guardduty-enabled-centralized": {
+      "status": "checked"
+    },
+    "guardduty-non-archived-findings": {
+      "status": "runtime-only",
+      "reason": "Operational: GuardDuty findings must be triaged within the window; the enclave enables GuardDuty (security-services)."
+    },
+    "iam-customer-policy-blocked-kms-actions": {
+      "status": "checked"
+    },
+    "iam-group-has-users-check": {
+      "status": "customer-prerequisite",
+      "reason": "IAM groups/users are not created by the enclave; identity via IAM Identity Center."
+    },
+    "iam-inline-policy-blocked-kms-actions": {
+      "status": "checked"
+    },
+    "iam-no-inline-policy-check": {
+      "status": "checked"
+    },
+    "iam-password-policy": {
+      "status": "checked"
+    },
+    "iam-policy-no-statements-with-admin-access": {
+      "status": "checked"
+    },
+    "iam-policy-no-statements-with-full-access": {
+      "status": "checked"
+    },
+    "iam-root-access-key-check": {
+      "status": "customer-prerequisite",
+      "reason": "Root user hygiene is an account baseline (Control Tower / LZA)."
+    },
+    "iam-user-group-membership-check": {
+      "status": "customer-prerequisite",
+      "reason": "No IAM users in the enclave; identity via IAM Identity Center."
+    },
+    "iam-user-mfa-enabled": {
+      "status": "customer-prerequisite",
+      "reason": "No IAM users in the enclave; identity via IAM Identity Center (MFA enforced there)."
+    },
+    "iam-user-no-policies-check": {
+      "status": "customer-prerequisite",
+      "reason": "No IAM users in the enclave."
+    },
+    "iam-user-unused-credentials-check": {
+      "status": "customer-prerequisite",
+      "reason": "No IAM users in the enclave."
+    },
+    "kms-cmk-not-scheduled-for-deletion": {
+      "status": "checked"
+    },
+    "lambda-concurrency-check": {
+      "status": "checked"
+    },
+    "lambda-dlq-check": {
+      "status": "checked"
+    },
+    "lambda-function-public-access-prohibited": {
+      "status": "checked"
+    },
+    "lambda-inside-vpc": {
+      "status": "checked"
+    },
+    "mfa-enabled-for-iam-console-access": {
+      "status": "customer-prerequisite",
+      "reason": "No IAM users in the enclave; console access via IAM Identity Center with MFA."
+    },
+    "multi-region-cloudtrail-enabled": {
+      "status": "checked"
+    },
+    "no-unrestricted-route-to-igw": {
+      "status": "customer-prerequisite",
+      "reason": "Customer VPC routing; the enclave requires private subnets without IGW routes."
+    },
+    "opensearch-in-vpc-only": {
+      "status": "not-in-enclave",
+      "reason": "No OpenSearch."
+    },
+    "rds-cluster-multi-az-enabled": {
+      "status": "checked"
+    },
+    "rds-enhanced-monitoring-enabled": {
+      "status": "checked"
+    },
+    "rds-instance-deletion-protection-enabled": {
+      "status": "checked"
+    },
+    "rds-instance-public-access-check": {
+      "status": "checked"
+    },
+    "rds-logging-enabled": {
+      "status": "checked"
+    },
+    "rds-multi-az-support": {
+      "status": "checked"
+    },
+    "rds-resources-protected-by-backup-plan": {
+      "status": "checked"
+    },
+    "rds-snapshots-public-prohibited": {
+      "status": "runtime-only",
+      "reason": "Snapshots exist only at runtime; Aurora is private, and the snapshot-sharing block is set account-wide (see ebs-snapshot-public-restorable-check for EBS)."
+    },
+    "redshift-backup-enabled": {
+      "status": "not-in-enclave",
+      "reason": "No Redshift."
+    },
+    "redshift-cluster-configuration-check": {
+      "status": "not-in-enclave",
+      "reason": "No Redshift."
+    },
+    "redshift-cluster-kms-enabled": {
+      "status": "not-in-enclave",
+      "reason": "No Redshift."
+    },
+    "redshift-cluster-public-access-check": {
+      "status": "not-in-enclave",
+      "reason": "No Redshift."
+    },
+    "redshift-require-tls-ssl": {
+      "status": "not-in-enclave",
+      "reason": "No Redshift."
+    },
+    "restricted-common-ports": {
+      "status": "customer-prerequisite",
+      "reason": "Security groups are customer inputs; the sandbox fixture allows only 443/5432 inside the VPC CIDR."
+    },
+    "restricted-ssh": {
+      "status": "customer-prerequisite",
+      "reason": "Security groups are customer inputs (endpoint / agent / Aurora SGs); the sandbox fixture opens no SSH."
+    },
+    "root-account-hardware-mfa-enabled": {
+      "status": "customer-prerequisite",
+      "reason": "Root user MFA is an account baseline (Control Tower / LZA); cannot be set by IaC."
+    },
+    "root-account-mfa-enabled": {
+      "status": "customer-prerequisite",
+      "reason": "Root user MFA is an account baseline; cannot be set by IaC."
+    },
+    "s3-account-level-public-access-blocks-periodic": {
+      "status": "checked"
+    },
+    "s3-bucket-level-public-access-prohibited": {
+      "status": "checked"
+    },
+    "s3-bucket-logging-enabled": {
+      "status": "checked"
+    },
+    "s3-bucket-public-read-prohibited": {
+      "status": "checked"
+    },
+    "s3-bucket-public-write-prohibited": {
+      "status": "checked"
+    },
+    "s3-bucket-replication-enabled": {
+      "status": "checked"
+    },
+    "s3-bucket-ssl-requests-only": {
+      "status": "checked"
+    },
+    "s3-bucket-versioning-enabled": {
+      "status": "checked"
+    },
+    "s3-default-encryption-kms": {
+      "status": "checked"
+    },
+    "sagemaker-endpoint-configuration-kms-key-configured": {
+      "status": "not-in-enclave",
+      "reason": "No SageMaker (models via Bedrock)."
+    },
+    "sagemaker-notebook-instance-kms-key-configured": {
+      "status": "not-in-enclave",
+      "reason": "No SageMaker."
+    },
+    "sagemaker-notebook-no-direct-internet-access": {
+      "status": "not-in-enclave",
+      "reason": "No SageMaker."
+    },
+    "securityhub-enabled": {
+      "status": "checked"
+    },
+    "sns-encrypted-kms": {
+      "status": "checked"
+    },
+    "ssm-document-not-public": {
+      "status": "not-in-enclave",
+      "reason": "No SSM documents (account-level SSM document sharing block is a landing-zone setting)."
+    },
+    "subnet-auto-assign-public-ip-disabled": {
+      "status": "customer-prerequisite",
+      "reason": "Customer VPC subnets; the enclave requires private subnets (sandbox fixture complies)."
+    },
+    "vpc-default-security-group-closed": {
+      "status": "checked"
+    },
+    "vpc-flow-logs-enabled": {
+      "status": "checked"
+    },
+    "vpc-sg-open-only-to-authorized-ports": {
+      "status": "customer-prerequisite",
+      "reason": "Security groups are customer inputs; no 0.0.0.0/0 ingress in the sandbox fixture."
+    },
+    "vpc-vpn-2-tunnels-up": {
+      "status": "customer-prerequisite",
+      "reason": "Site-to-site VPN (e.g. DoD BCAP path) is customer network; the enclave creates none."
+    },
+    "waf-regional-webacl-not-empty": {
+      "status": "not-in-enclave",
+      "reason": "No WAF (no ALB / API Gateway)."
+    },
+    "wafv2-logging-enabled": {
+      "status": "not-in-enclave",
+      "reason": "No WAF."
+    }
+  },
+  "services": {
+    "acm": [
+      {
+        "config_rule": "acm-certificate-expiration-check",
+        "owner": "AWS",
+        "source_identifier": "ACM_CERTIFICATE_EXPIRATION_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::ACM::Certificate"
+        ],
+        "parameters": {
+          "daysToExpiration": "90"
+        },
+        "controls": [
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-12",
+            "description": "CRYPTOGRAPHIC KEY ESTABLISHMENT AND MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "apigateway": [
+      {
+        "config_rule": "api-gw-associated-with-waf",
+        "owner": "AWS",
+        "source_identifier": "API_GW_ASSOCIATED_WITH_WAF",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::ApiGateway::Stage"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "api-gw-execution-logging-enabled",
+        "owner": "AWS",
+        "source_identifier": "API_GW_EXECUTION_LOGGING_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::ApiGateway::Stage",
+          "AWS::ApiGatewayV2::Stage"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AU-2",
+            "description": "AUDIT EVENTS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-3",
+            "description": "CONTENT OF AUDIT RECORDS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-12",
+            "description": "AUDIT GENERATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "autoscaling": [
+      {
+        "config_rule": "autoscaling-group-elb-healthcheck-required",
+        "owner": "AWS",
+        "source_identifier": "AUTOSCALING_GROUP_ELB_HEALTHCHECK_REQUIRED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::AutoScaling::AutoScalingGroup"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IR-4",
+            "description": "INCIDENT HANDLING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "autoscaling-launch-config-public-ip-disabled",
+        "owner": "AWS",
+        "source_identifier": "AUTOSCALING_LAUNCH_CONFIG_PUBLIC_IP_DISABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::AutoScaling::LaunchConfiguration"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "backup": [
+      {
+        "config_rule": "backup-plan-min-frequency-and-min-retention-check",
+        "owner": "AWS",
+        "source_identifier": "BACKUP_PLAN_MIN_FREQUENCY_AND_MIN_RETENTION_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::Backup::BackupPlan"
+        ],
+        "parameters": {
+          "requiredFrequencyUnit": "days",
+          "requiredFrequencyValue": "1",
+          "requiredRetentionDays": "35"
+        },
+        "controls": [
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "cloudtrail": [
+      {
+        "config_rule": "cloud-trail-cloud-watch-logs-enabled",
+        "owner": "AWS",
+        "source_identifier": "CLOUD_TRAIL_CLOUD_WATCH_LOGS_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-2",
+            "description": "AUDIT EVENTS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-3",
+            "description": "CONTENT OF AUDIT RECORDS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-12",
+            "description": "AUDIT GENERATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "cloud-trail-encryption-enabled",
+        "owner": "AWS",
+        "source_identifier": "CLOUD_TRAIL_ENCRYPTION_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AU-9",
+            "description": "PROTECTION OF AUDIT INFORMATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "cloud-trail-log-file-validation-enabled",
+        "owner": "AWS",
+        "source_identifier": "CLOUD_TRAIL_LOG_FILE_VALIDATION_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AU-9",
+            "description": "PROTECTION OF AUDIT INFORMATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "cloudtrail-enabled",
+        "owner": "AWS",
+        "source_identifier": "CLOUD_TRAIL_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-2",
+            "description": "AUDIT EVENTS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-3",
+            "description": "CONTENT OF AUDIT RECORDS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-12",
+            "description": "AUDIT GENERATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "cloudtrail-s3-dataevents-enabled",
+        "owner": "AWS",
+        "source_identifier": "CLOUDTRAIL_S3_DATAEVENTS_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-2",
+            "description": "AUDIT EVENTS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-3",
+            "description": "CONTENT OF AUDIT RECORDS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-12",
+            "description": "AUDIT GENERATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "multi-region-cloudtrail-enabled",
+        "owner": "AWS",
+        "source_identifier": "MULTI_REGION_CLOUD_TRAIL_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-2",
+            "description": "AUDIT EVENTS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-3",
+            "description": "CONTENT OF AUDIT RECORDS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-12",
+            "description": "AUDIT GENERATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "cloudwatch": [
+      {
+        "config_rule": "cloudwatch-alarm-action-check",
+        "owner": "AWS",
+        "source_identifier": "CLOUDWATCH_ALARM_ACTION_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::CloudWatch::Alarm"
+        ],
+        "parameters": {
+          "alarmActionRequired": "true",
+          "insufficientDataActionRequired": "true",
+          "okActionRequired": "false"
+        },
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IR-4",
+            "description": "INCIDENT HANDLING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-5",
+            "description": "SECURITY ALERTS, ADVISORIES, AND DIRECTIVES",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "cloudwatch-log-group-encrypted",
+        "owner": "AWS",
+        "source_identifier": "CLOUDWATCH_LOG_GROUP_ENCRYPTED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AU-9",
+            "description": "PROTECTION OF AUDIT INFORMATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "cmk": [
+      {
+        "config_rule": "cmk-backing-key-rotation-enabled",
+        "owner": "AWS",
+        "source_identifier": "CMK_BACKING_KEY_ROTATION_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "SC-12",
+            "description": "CRYPTOGRAPHIC KEY ESTABLISHMENT AND MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "codebuild": [
+      {
+        "config_rule": "codebuild-project-envvar-awscred-check",
+        "owner": "AWS",
+        "source_identifier": "CODEBUILD_PROJECT_ENVVAR_AWSCRED_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::CodeBuild::Project"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "IA-5",
+            "description": "AUTHENTICATOR MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SA-3",
+            "description": "SYSTEM DEVELOPMENT LIFE CYCLE",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-3",
+            "description": "FLAW REMEDIATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "codebuild-project-logging-enabled",
+        "owner": "AWS",
+        "source_identifier": "CODEBUILD_PROJECT_LOGGING_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::CodeBuild::Project"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-2",
+            "description": "AUDIT EVENTS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-3",
+            "description": "CONTENT OF AUDIT RECORDS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-12",
+            "description": "AUDIT GENERATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "codebuild-project-source-repo-url-check",
+        "owner": "AWS",
+        "source_identifier": "CODEBUILD_PROJECT_SOURCE_REPO_URL_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::CodeBuild::Project"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "SA-3",
+            "description": "SYSTEM DEVELOPMENT LIFE CYCLE",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-3",
+            "description": "FLAW REMEDIATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "cw": [
+      {
+        "config_rule": "cw-loggroup-retention-period-check",
+        "owner": "AWS",
+        "source_identifier": "CW_LOGGROUP_RETENTION_PERIOD_CHECK",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-11",
+            "description": "AUDIT RECORD RETENTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "dms": [
+      {
+        "config_rule": "dms-replication-not-public",
+        "owner": "AWS",
+        "source_identifier": "DMS_REPLICATION_NOT_PUBLIC",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "dynamodb": [
+      {
+        "config_rule": "dynamodb-autoscaling-enabled",
+        "owner": "AWS",
+        "source_identifier": "DYNAMODB_AUTOSCALING_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::DynamoDB::Table"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "dynamodb-pitr-enabled",
+        "owner": "AWS",
+        "source_identifier": "DYNAMODB_PITR_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::DynamoDB::Table"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "dynamodb-resources-protected-by-backup-plan",
+        "owner": "AWS",
+        "source_identifier": "DYNAMODB_RESOURCES_PROTECTED_BY_BACKUP_PLAN",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::DynamoDB::Table"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "dynamodb-throughput-limit-check",
+        "owner": "AWS",
+        "source_identifier": "DYNAMODB_THROUGHPUT_LIMIT_CHECK",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {
+          "accountRCUThresholdPercentage": "80",
+          "accountWCUThresholdPercentage": "80"
+        },
+        "controls": [
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "ec2": [
+      {
+        "config_rule": "ebs-optimized-instance",
+        "owner": "AWS",
+        "source_identifier": "EBS_OPTIMIZED_INSTANCE",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::Instance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ebs-resources-protected-by-backup-plan",
+        "owner": "AWS",
+        "source_identifier": "EBS_RESOURCES_PROTECTED_BY_BACKUP_PLAN",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::Volume"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ebs-snapshot-public-restorable-check",
+        "owner": "AWS",
+        "source_identifier": "EBS_SNAPSHOT_PUBLIC_RESTORABLE_CHECK",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ec2-imdsv2-check",
+        "owner": "AWS",
+        "source_identifier": "EC2_IMDSV2_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::Instance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ec2-instance-detailed-monitoring-enabled",
+        "owner": "AWS",
+        "source_identifier": "EC2_INSTANCE_DETAILED_MONITORING_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::Instance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ec2-instance-managed-by-systems-manager",
+        "owner": "AWS",
+        "source_identifier": "EC2_INSTANCE_MANAGED_BY_SSM",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::Instance",
+          "AWS::SSM::ManagedInstanceInventory"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-7",
+            "description": "LEAST FUNCTIONALITY",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-8",
+            "description": "INFORMATION SYSTEM COMPONENT INVENTORY",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SA-3",
+            "description": "SYSTEM DEVELOPMENT LIFE CYCLE",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-2",
+            "description": "FLAW REMEDIATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ec2-instance-no-public-ip",
+        "owner": "AWS",
+        "source_identifier": "EC2_INSTANCE_NO_PUBLIC_IP",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::Instance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ec2-instance-profile-attached",
+        "owner": "AWS",
+        "source_identifier": "EC2_INSTANCE_PROFILE_ATTACHED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::Instance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-7",
+            "description": "LEAST FUNCTIONALITY",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ec2-instances-in-vpc",
+        "owner": "AWS",
+        "source_identifier": "INSTANCES_IN_VPC",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::Instance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ec2-resources-protected-by-backup-plan",
+        "owner": "AWS",
+        "source_identifier": "EC2_RESOURCES_PROTECTED_BY_BACKUP_PLAN",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::Instance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ec2-stopped-instance",
+        "owner": "AWS",
+        "source_identifier": "EC2_STOPPED_INSTANCE",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ec2-volume-inuse-check",
+        "owner": "AWS",
+        "source_identifier": "EC2_VOLUME_INUSE_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::Volume"
+        ],
+        "parameters": {
+          "deleteOnTermination": "true"
+        },
+        "controls": [
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "no-unrestricted-route-to-igw",
+        "owner": "AWS",
+        "source_identifier": "NO_UNRESTRICTED_ROUTE_TO_IGW",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::RouteTable"
+        ],
+        "parameters": {
+          "routeTableIds": "here add Comma-separated list of the route table IDs"
+        },
+        "controls": [
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "restricted-common-ports",
+        "owner": "AWS",
+        "source_identifier": "RESTRICTED_INCOMING_TRAFFIC",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::SecurityGroup"
+        ],
+        "parameters": {
+          "blockedPort1": "20",
+          "blockedPort2": "21",
+          "blockedPort3": "3389",
+          "blockedPort4": "3306",
+          "blockedPort5": "4333"
+        },
+        "controls": [
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "restricted-ssh",
+        "owner": "AWS",
+        "source_identifier": "INCOMING_SSH_DISABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::SecurityGroup"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "subnet-auto-assign-public-ip-disabled",
+        "owner": "AWS",
+        "source_identifier": "SUBNET_AUTO_ASSIGN_PUBLIC_IP_DISABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::Subnet"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "vpc-default-security-group-closed",
+        "owner": "AWS",
+        "source_identifier": "VPC_DEFAULT_SECURITY_GROUP_CLOSED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::SecurityGroup"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "vpc-flow-logs-enabled",
+        "owner": "AWS",
+        "source_identifier": "VPC_FLOW_LOGS_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AU-2",
+            "description": "AUDIT EVENTS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-3",
+            "description": "CONTENT OF AUDIT RECORDS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-12",
+            "description": "AUDIT GENERATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "vpc-sg-open-only-to-authorized-ports",
+        "owner": "AWS",
+        "source_identifier": "VPC_SG_OPEN_ONLY_TO_AUTHORIZED_PORTS",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::SecurityGroup"
+        ],
+        "parameters": {
+          "authorizedTcpPorts": "443"
+        },
+        "controls": [
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "vpc-vpn-2-tunnels-up",
+        "owner": "AWS",
+        "source_identifier": "VPC_VPN_2_TUNNELS_UP",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EC2::VPNConnection"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "ecs": [
+      {
+        "config_rule": "ecs-task-definition-memory-hard-limit",
+        "owner": "AWS",
+        "source_identifier": "ECS_TASK_DEFINITION_MEMORY_HARD_LIMIT",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::ECS::TaskDefinition"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "SI-3",
+            "description": "FLAW REMEDIATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-16",
+            "description": "MEMORY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ecs-task-definition-user-for-host-mode-check",
+        "owner": "AWS",
+        "source_identifier": "ECS_TASK_DEFINITION_USER_FOR_HOST_MODE_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::ECS::TaskDefinition"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "efs": [
+      {
+        "config_rule": "efs-resources-protected-by-backup-plan",
+        "owner": "AWS",
+        "source_identifier": "EFS_RESOURCES_PROTECTED_BY_BACKUP_PLAN",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::EFS::FileSystem"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "elasticache": [
+      {
+        "config_rule": "elasticache-redis-cluster-automatic-backup-check",
+        "owner": "AWS",
+        "source_identifier": "ELASTICACHE_REDIS_CLUSTER_AUTOMATIC_BACKUP_CHECK",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "elasticbeanstalk": [
+      {
+        "config_rule": "beanstalk-enhanced-health-reporting-enabled",
+        "owner": "AWS",
+        "source_identifier": "BEANSTALK_ENHANCED_HEALTH_REPORTING_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::ElasticBeanstalk::Environment"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "elastic-beanstalk-managed-updates-enabled",
+        "owner": "AWS",
+        "source_identifier": "ELASTIC_BEANSTALK_MANAGED_UPDATES_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::ElasticBeanstalk::Environment"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "SI-2",
+            "description": "FLAW REMEDIATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "elb": [
+      {
+        "config_rule": "alb-http-to-https-redirection-check",
+        "owner": "AWS",
+        "source_identifier": "ALB_HTTP_TO_HTTPS_REDIRECTION_CHECK",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "alb-waf-enabled",
+        "owner": "AWS",
+        "source_identifier": "ALB_WAF_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::ElasticLoadBalancingV2::LoadBalancer"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "elb-cross-zone-load-balancing-enabled",
+        "owner": "AWS",
+        "source_identifier": "ELB_CROSS_ZONE_LOAD_BALANCING_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::ElasticLoadBalancing::LoadBalancer"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "elb-deletion-protection-enabled",
+        "owner": "AWS",
+        "source_identifier": "ELB_DELETION_PROTECTION_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::ElasticLoadBalancingV2::LoadBalancer"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "elb-logging-enabled",
+        "owner": "AWS",
+        "source_identifier": "ELB_LOGGING_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::ElasticLoadBalancing::LoadBalancer",
+          "AWS::ElasticLoadBalancingV2::LoadBalancer"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AU-2",
+            "description": "AUDIT EVENTS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-3",
+            "description": "CONTENT OF AUDIT RECORDS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-12",
+            "description": "AUDIT GENERATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "elb-tls-https-listeners-only",
+        "owner": "AWS",
+        "source_identifier": "ELB_TLS_HTTPS_LISTENERS_ONLY",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::ElasticLoadBalancing::LoadBalancer"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "emr": [
+      {
+        "config_rule": "emr-master-no-public-ip",
+        "owner": "AWS",
+        "source_identifier": "EMR_MASTER_NO_PUBLIC_IP",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "fsx": [
+      {
+        "config_rule": "fsx-resources-protected-by-backup-plan",
+        "owner": "AWS",
+        "source_identifier": "FSX_RESOURCES_PROTECTED_BY_BACKUP_PLAN",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "guardduty": [
+      {
+        "config_rule": "guardduty-enabled-centralized",
+        "owner": "AWS",
+        "source_identifier": "GUARDDUTY_ENABLED_CENTRALIZED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-8",
+            "description": "INFORMATION SYSTEM COMPONENT INVENTORY",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IR-4",
+            "description": "INCIDENT HANDLING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IR-6",
+            "description": "INCIDENT REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IR-7",
+            "description": "INCIDENT RESPONSE ASSISTANCE",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "RA-5",
+            "description": "VULNERABILITY SCANNING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-5",
+            "description": "SECURITY ALERTS, ADVISORIES, AND DIRECTIVES",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "guardduty-non-archived-findings",
+        "owner": "AWS",
+        "source_identifier": "GUARDDUTY_NON_ARCHIVED_FINDINGS",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {
+          "daysHighSev": "1",
+          "daysLowSev": "30",
+          "daysMediumSev": "7"
+        },
+        "controls": [
+          {
+            "id": "IR-4",
+            "description": "INCIDENT HANDLING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IR-6",
+            "description": "INCIDENT REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IR-7",
+            "description": "INCIDENT RESPONSE ASSISTANCE",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "RA-5",
+            "description": "VULNERABILITY SCANNING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-5",
+            "description": "SECURITY ALERTS, ADVISORIES, AND DIRECTIVES",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "iam": [
+      {
+        "config_rule": "access-keys-rotated",
+        "owner": "AWS",
+        "source_identifier": "ACCESS_KEYS_ROTATED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {
+          "maxAccessKeyAge": "90"
+        },
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "iam-customer-policy-blocked-kms-actions",
+        "owner": "AWS",
+        "source_identifier": "IAM_CUSTOMER_POLICY_BLOCKED_KMS_ACTIONS",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::IAM::Policy"
+        ],
+        "parameters": {
+          "blockedActionsPatterns": "kms:Decrypt,kms:ReEncryptFrom"
+        },
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "iam-group-has-users-check",
+        "owner": "AWS",
+        "source_identifier": "IAM_GROUP_HAS_USERS_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::IAM::Group"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "iam-inline-policy-blocked-kms-actions",
+        "owner": "AWS",
+        "source_identifier": "IAM_INLINE_POLICY_BLOCKED_KMS_ACTIONS",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::IAM::Group",
+          "AWS::IAM::Role",
+          "AWS::IAM::User"
+        ],
+        "parameters": {
+          "blockedActionsPatterns": "kms:Decrypt,kms:ReEncryptFrom"
+        },
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "iam-no-inline-policy-check",
+        "owner": "AWS",
+        "source_identifier": "IAM_NO_INLINE_POLICY_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::IAM::User",
+          "AWS::IAM::Role",
+          "AWS::IAM::Group"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "iam-password-policy",
+        "owner": "AWS",
+        "source_identifier": "IAM_PASSWORD_POLICY",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {
+          "MaxPasswordAge": "90",
+          "MinimumPasswordLength": "14",
+          "PasswordReusePrevention": "24",
+          "RequireLowercaseCharacters": "true",
+          "RequireNumbers": "true",
+          "RequireSymbols": "true",
+          "RequireUppercaseCharacters": "true"
+        },
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IA-2",
+            "description": "IDENTIFICATION AND AUTHENTICATION (ORGANIZATIONAL USERS)",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IA-5",
+            "description": "AUTHENTICATOR MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "iam-policy-no-statements-with-admin-access",
+        "owner": "AWS",
+        "source_identifier": "IAM_POLICY_NO_STATEMENTS_WITH_ADMIN_ACCESS",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::IAM::Policy"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "iam-policy-no-statements-with-full-access",
+        "owner": "AWS",
+        "source_identifier": "IAM_POLICY_NO_STATEMENTS_WITH_FULL_ACCESS",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::IAM::Policy"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "iam-root-access-key-check",
+        "owner": "AWS",
+        "source_identifier": "IAM_ROOT_ACCESS_KEY_CHECK",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IA-2",
+            "description": "IDENTIFICATION AND AUTHENTICATION (ORGANIZATIONAL USERS)",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "iam-user-group-membership-check",
+        "owner": "AWS",
+        "source_identifier": "IAM_USER_GROUP_MEMBERSHIP_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::IAM::User"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "iam-user-mfa-enabled",
+        "owner": "AWS",
+        "source_identifier": "IAM_USER_MFA_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IA-2",
+            "description": "IDENTIFICATION AND AUTHENTICATION (ORGANIZATIONAL USERS)",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "iam-user-no-policies-check",
+        "owner": "AWS",
+        "source_identifier": "IAM_USER_NO_POLICIES_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::IAM::User"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "iam-user-unused-credentials-check",
+        "owner": "AWS",
+        "source_identifier": "IAM_USER_UNUSED_CREDENTIALS_CHECK",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {
+          "maxCredentialUsageAge": "90"
+        },
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "mfa-enabled-for-iam-console-access",
+        "owner": "AWS",
+        "source_identifier": "MFA_ENABLED_FOR_IAM_CONSOLE_ACCESS",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IA-2",
+            "description": "IDENTIFICATION AND AUTHENTICATION (ORGANIZATIONAL USERS)",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "root-account-hardware-mfa-enabled",
+        "owner": "AWS",
+        "source_identifier": "ROOT_ACCOUNT_HARDWARE_MFA_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IA-2",
+            "description": "IDENTIFICATION AND AUTHENTICATION (ORGANIZATIONAL USERS)",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "root-account-mfa-enabled",
+        "owner": "AWS",
+        "source_identifier": "ROOT_ACCOUNT_MFA_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IA-2",
+            "description": "IDENTIFICATION AND AUTHENTICATION (ORGANIZATIONAL USERS)",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "kms": [
+      {
+        "config_rule": "kms-cmk-not-scheduled-for-deletion",
+        "owner": "AWS",
+        "source_identifier": "KMS_CMK_NOT_SCHEDULED_FOR_DELETION",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::KMS::Key"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "SC-12",
+            "description": "CRYPTOGRAPHIC KEY ESTABLISHMENT AND MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-13",
+            "description": "CRYPTOGRAPHIC PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "lambda": [
+      {
+        "config_rule": "lambda-concurrency-check",
+        "owner": "AWS",
+        "source_identifier": "LAMBDA_CONCURRENCY_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::Lambda::Function"
+        ],
+        "parameters": {
+          "ConcurrencyLimitHigh": "1000",
+          "ConcurrencyLimitLow": "500"
+        },
+        "controls": [
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "lambda-dlq-check",
+        "owner": "AWS",
+        "source_identifier": "LAMBDA_DLQ_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::Lambda::Function"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "lambda-function-public-access-prohibited",
+        "owner": "AWS",
+        "source_identifier": "LAMBDA_FUNCTION_PUBLIC_ACCESS_PROHIBITED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::Lambda::Function"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "lambda-inside-vpc",
+        "owner": "AWS",
+        "source_identifier": "LAMBDA_INSIDE_VPC",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::Lambda::Function"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "opensearch": [
+      {
+        "config_rule": "elasticsearch-in-vpc-only",
+        "owner": "AWS",
+        "source_identifier": "ELASTICSEARCH_IN_VPC_ONLY",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "opensearch-in-vpc-only",
+        "owner": "AWS",
+        "source_identifier": "OPENSEARCH_IN_VPC_ONLY",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::OpenSearch::Domain"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "rds": [
+      {
+        "config_rule": "aurora-resources-protected-by-backup-plan",
+        "owner": "AWS",
+        "source_identifier": "AURORA_RESOURCES_PROTECTED_BY_BACKUP_PLAN",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::RDS::DBCluster"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "db-instance-backup-enabled",
+        "owner": "AWS",
+        "source_identifier": "DB_INSTANCE_BACKUP_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::RDS::DBInstance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "rds-cluster-multi-az-enabled",
+        "owner": "AWS",
+        "source_identifier": "RDS_CLUSTER_MULTI_AZ_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::RDS::DBCluster"
+        ],
+        "parameters": {},
+        "controls": [],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "rds-enhanced-monitoring-enabled",
+        "owner": "AWS",
+        "source_identifier": "RDS_ENHANCED_MONITORING_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::RDS::DBInstance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "rds-instance-deletion-protection-enabled",
+        "owner": "AWS",
+        "source_identifier": "RDS_INSTANCE_DELETION_PROTECTION_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::RDS::DBInstance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "rds-instance-public-access-check",
+        "owner": "AWS",
+        "source_identifier": "RDS_INSTANCE_PUBLIC_ACCESS_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::RDS::DBInstance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "rds-logging-enabled",
+        "owner": "AWS",
+        "source_identifier": "RDS_LOGGING_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::RDS::DBInstance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-2",
+            "description": "AUDIT EVENTS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-3",
+            "description": "CONTENT OF AUDIT RECORDS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-12",
+            "description": "AUDIT GENERATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "rds-multi-az-support",
+        "owner": "AWS",
+        "source_identifier": "RDS_MULTI_AZ_SUPPORT",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::RDS::DBInstance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "rds-resources-protected-by-backup-plan",
+        "owner": "AWS",
+        "source_identifier": "RDS_RESOURCES_PROTECTED_BY_BACKUP_PLAN",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::RDS::DBInstance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "rds-snapshots-public-prohibited",
+        "owner": "AWS",
+        "source_identifier": "RDS_SNAPSHOTS_PUBLIC_PROHIBITED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::RDS::DBSnapshot",
+          "AWS::RDS::DBClusterSnapshot"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "redshift": [
+      {
+        "config_rule": "redshift-backup-enabled",
+        "owner": "AWS",
+        "source_identifier": "REDSHIFT_BACKUP_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::Redshift::Cluster"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "redshift-cluster-configuration-check",
+        "owner": "AWS",
+        "source_identifier": "REDSHIFT_CLUSTER_CONFIGURATION_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::Redshift::Cluster"
+        ],
+        "parameters": {
+          "clusterDbEncrypted": "TRUE",
+          "loggingEnabled": "TRUE"
+        },
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-2",
+            "description": "AUDIT EVENTS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-3",
+            "description": "CONTENT OF AUDIT RECORDS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-12",
+            "description": "AUDIT GENERATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "redshift-cluster-kms-enabled",
+        "owner": "AWS",
+        "source_identifier": "REDSHIFT_CLUSTER_KMS_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::Redshift::Cluster"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "SC-13",
+            "description": "CRYPTOGRAPHIC PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "redshift-cluster-public-access-check",
+        "owner": "AWS",
+        "source_identifier": "REDSHIFT_CLUSTER_PUBLIC_ACCESS_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::Redshift::Cluster"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "redshift-require-tls-ssl",
+        "owner": "AWS",
+        "source_identifier": "REDSHIFT_REQUIRE_TLS_SSL",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::Redshift::Cluster"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "s3": [
+      {
+        "config_rule": "s3-account-level-public-access-blocks-periodic",
+        "owner": "AWS",
+        "source_identifier": "S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCKS_PERIODIC",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "s3-bucket-level-public-access-prohibited",
+        "owner": "AWS",
+        "source_identifier": "S3_BUCKET_LEVEL_PUBLIC_ACCESS_PROHIBITED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::S3::Bucket"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "s3-bucket-logging-enabled",
+        "owner": "AWS",
+        "source_identifier": "S3_BUCKET_LOGGING_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::S3::Bucket"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-2",
+            "description": "AUDIT EVENTS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-3",
+            "description": "CONTENT OF AUDIT RECORDS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-12",
+            "description": "AUDIT GENERATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "s3-bucket-public-read-prohibited",
+        "owner": "AWS",
+        "source_identifier": "S3_BUCKET_PUBLIC_READ_PROHIBITED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::S3::Bucket"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "s3-bucket-public-write-prohibited",
+        "owner": "AWS",
+        "source_identifier": "S3_BUCKET_PUBLIC_WRITE_PROHIBITED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::S3::Bucket"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "s3-bucket-replication-enabled",
+        "owner": "AWS",
+        "source_identifier": "S3_BUCKET_REPLICATION_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::S3::Bucket"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AU-9",
+            "description": "PROTECTION OF AUDIT INFORMATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "s3-bucket-ssl-requests-only",
+        "owner": "AWS",
+        "source_identifier": "S3_BUCKET_SSL_REQUESTS_ONLY",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::S3::Bucket"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "s3-bucket-versioning-enabled",
+        "owner": "AWS",
+        "source_identifier": "S3_BUCKET_VERSIONING_ENABLED",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::S3::Bucket"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AU-9",
+            "description": "PROTECTION OF AUDIT INFORMATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-9",
+            "description": "INFORMATION SYSTEM BACKUP",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CP-10",
+            "description": "INFORMATION SYSTEM RECOVERY AND RECONSTITUTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-5",
+            "description": "DENIAL OF SERVICE PROTECTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-12",
+            "description": "INFORMATION HANDLING AND RETENTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "s3-default-encryption-kms",
+        "owner": "AWS",
+        "source_identifier": "S3_DEFAULT_ENCRYPTION_KMS",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::S3::Bucket"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "SC-13",
+            "description": "CRYPTOGRAPHIC PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "sagemaker": [
+      {
+        "config_rule": "sagemaker-endpoint-configuration-kms-key-configured",
+        "owner": "AWS",
+        "source_identifier": "SAGEMAKER_ENDPOINT_CONFIGURATION_KMS_KEY_CONFIGURED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "SC-13",
+            "description": "CRYPTOGRAPHIC PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "sagemaker-notebook-instance-kms-key-configured",
+        "owner": "AWS",
+        "source_identifier": "SAGEMAKER_NOTEBOOK_INSTANCE_KMS_KEY_CONFIGURED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "SC-13",
+            "description": "CRYPTOGRAPHIC PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "sagemaker-notebook-no-direct-internet-access",
+        "owner": "AWS",
+        "source_identifier": "SAGEMAKER_NOTEBOOK_NO_DIRECT_INTERNET_ACCESS",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "securityhub": [
+      {
+        "config_rule": "securityhub-enabled",
+        "owner": "AWS",
+        "source_identifier": "SECURITYHUB_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-2",
+            "description": "ACCOUNT MANAGEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AC-17",
+            "description": "REMOTE ACCESS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CA-7",
+            "description": "CONTINUOUS MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IR-4",
+            "description": "INCIDENT HANDLING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IR-6",
+            "description": "INCIDENT REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "IR-7",
+            "description": "INCIDENT RESPONSE ASSISTANCE",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "RA-5",
+            "description": "VULNERABILITY SCANNING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-5",
+            "description": "SECURITY ALERTS, ADVISORIES, AND DIRECTIVES",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "sns": [
+      {
+        "config_rule": "sns-encrypted-kms",
+        "owner": "AWS",
+        "source_identifier": "SNS_ENCRYPTED_KMS",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::SNS::Topic"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "SC-13",
+            "description": "CRYPTOGRAPHIC PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "ssm": [
+      {
+        "config_rule": "ec2-managedinstance-association-compliance-status-check",
+        "owner": "AWS",
+        "source_identifier": "EC2_MANAGEDINSTANCE_ASSOCIATION_COMPLIANCE_STATUS_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::SSM::AssociationCompliance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CM-2",
+            "description": "BASELINE CONFIGURATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-7",
+            "description": "LEAST FUNCTIONALITY",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "CM-8",
+            "description": "INFORMATION SYSTEM COMPONENT INVENTORY",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-2",
+            "description": "FLAW REMEDIATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ec2-managedinstance-patch-compliance-status-check",
+        "owner": "AWS",
+        "source_identifier": "EC2_MANAGEDINSTANCE_PATCH_COMPLIANCE_STATUS_CHECK",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::SSM::PatchCompliance"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "CM-8",
+            "description": "INFORMATION SYSTEM COMPONENT INVENTORY",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-2",
+            "description": "FLAW REMEDIATION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      },
+      {
+        "config_rule": "ssm-document-not-public",
+        "owner": "AWS",
+        "source_identifier": "SSM_DOCUMENT_NOT_PUBLIC",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AC-3",
+            "description": "ACCESS ENFORCEMENT",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "wafregional": [
+      {
+        "config_rule": "waf-regional-webacl-not-empty",
+        "owner": "AWS",
+        "source_identifier": "WAF_REGIONAL_WEBACL_NOT_EMPTY",
+        "custom_policy": null,
+        "resource_types": [
+          "AWS::WAFRegional::WebACL"
+        ],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ],
+    "wafv2": [
+      {
+        "config_rule": "wafv2-logging-enabled",
+        "owner": "AWS",
+        "source_identifier": "WAFV2_LOGGING_ENABLED",
+        "custom_policy": null,
+        "resource_types": [],
+        "parameters": {},
+        "controls": [
+          {
+            "id": "AU-2",
+            "description": "AUDIT EVENTS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-3",
+            "description": "CONTENT OF AUDIT RECORDS",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-6",
+            "description": "AUDIT REVIEW, ANALYSIS, AND REPORTING",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "AU-12",
+            "description": "AUDIT GENERATION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SC-7",
+            "description": "BOUNDARY PROTECTION",
+            "framework": "FedRAMP-Low"
+          },
+          {
+            "id": "SI-4",
+            "description": "INFORMATION SYSTEM MONITORING",
+            "framework": "FedRAMP-Low"
+          }
+        ],
+        "frameworks": [
+          "FedRAMP-Low"
+        ]
+      }
+    ]
+  },
+  "service_guidance": {
+    "bedrock": {
+      "inferred_controls": [
+        {
+          "id": "SGEA-TC-02",
+          "resource": "aws_cloudwatch_log_subscription_filter",
+          "attribute": "destination_arn",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "The token ledger is credited from the enclave's Bedrock model-invocation logs, so budget enforcement reflects every logged model call.",
+          "topic": "Log Retention",
+          "applies_when": "token_control.enabled && logging.model_invocation_logging",
+          "cfn": {
+            "type": "AWS::Logs::SubscriptionFilter",
+            "attribute": "DestinationArn"
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AU-11"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-BR-01",
+          "resource": "aws_bedrock_model_invocation_logging_configuration",
+          "attribute": "logging_config.text_data_delivery_enabled",
+          "require": {
+            "op": "equals",
+            "value": true
+          },
+          "level": "required",
+          "rationale": "Model-invocation logging is the audit record of prompts and completions.",
+          "topic": "Audit Logging",
+          "analog_config_rule": "api-gw-execution-logging-enabled",
+          "applies_when": "logging.model_invocation_logging",
+          "cfn": {
+            "type": "Custom::SgeaBedrockInvocationLogging",
+            "attribute": "Create",
+            "require": {
+              "op": "contains",
+              "value": "textDataDeliveryEnabled"
+            }
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AU-2",
+              "AU-3",
+              "AU-12"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AU-2",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AU-3",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AU-6",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AU-12",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-BR-02",
+          "resource": "aws_bedrock_model_invocation_logging_configuration",
+          "attribute": "logging_config.s3_config.bucket_name",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Deliver invocation logs to the most-sensitive log store (encrypted, Object Lock, enclave-only access).",
+          "topic": "Log Retention",
+          "applies_when": "logging.model_invocation_logging",
+          "cfn": {
+            "type": "Custom::SgeaBedrockInvocationLogging",
+            "attribute": "Create",
+            "require": {
+              "op": "contains",
+              "value": "s3Config"
+            }
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AU-11"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-BR-03",
+          "resource": "awscc_bedrock_enforced_guardrail_configuration",
+          "attribute": "guardrail_identifier",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "The SGEA L2 account-baseline guardrail level is an account-enforced guardrail applied to every model invocation.",
+          "topic": "Data Flow Enforcement",
+          "applies_when": "guardrails.levels contains L2_account_baseline",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-4"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-BR-03a",
+          "resource": "awscc_bedrock_enforced_guardrail_configuration",
+          "attribute": "selective_content_guarding.messages",
+          "require": {
+            "op": "equals",
+            "value": "COMPREHENSIVE"
+          },
+          "level": "required",
+          "rationale": "The enforced guardrail evaluates every user message and tool result, so a caller cannot narrow guarding with guardContent tags. System prompts (developer-authored) are SELECTIVE; whole-system-prompt evaluation trips the prompt-attack filter on ordinary agent instructions.",
+          "topic": "Data Flow Enforcement",
+          "applies_when": "guardrails.levels contains L2_account_baseline",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-4"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-BR-04",
+          "resource": "aws_bedrock_guardrail",
+          "attribute": "kms_key_arn",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Guardrail configuration (denied topics, regexes) encrypted with the enclave CMK.",
+          "topic": "Key Management",
+          "analog_config_rule": "dynamodb-table-encrypted-kms",
+          "cfn": {
+            "type": "AWS::Bedrock::Guardrail",
+            "attribute": "KmsKeyArn"
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-12",
+              "SC-12 (1)"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": false
+        },
+        {
+          "id": "SGEA-BR-05",
+          "resource": "awscc_bedrock_agent",
+          "attribute": "customer_encryption_key_arn",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Bedrock Agents session and memory data encrypted with the enclave CMK.",
+          "topic": "Encryption-at-Rest",
+          "analog_config_rule": "sagemaker-endpoint-configuration-kms-key-configured",
+          "scope": "per-app",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-28",
+              "SC-28 (1)"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "SC-13",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-BR-06",
+          "resource": "awscc_bedrock_agent",
+          "attribute": "guardrail_configuration.guardrail_identifier",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Every agent carries the tenant guardrail (SGEA L3 tenant-enforced level).",
+          "topic": "Data Flow Enforcement",
+          "applies_when": "guardrails.levels contains L3_tenant_enforced",
+          "scope": "per-app",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-4"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-BR-07",
+          "resource": "awscc_bedrock_agent",
+          "attribute": "idle_session_ttl_in_seconds",
+          "require": {
+            "op": "max",
+            "value": 900
+          },
+          "level": "required",
+          "rationale": "Same session-termination bound as SGEA-AC-RT-06.",
+          "topic": "Remote Access",
+          "scope": "per-app",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-17",
+              "AC-17 (3)",
+              "AC-17 (4)",
+              "AC-12",
+              "SC-10"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-BR-08",
+          "resource": "awscc_bedrock_data_source",
+          "attribute": "server_side_encryption_configuration.kms_key_arn",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Knowledge-base ingestion intermediates encrypted with the enclave CMK.",
+          "topic": "Encryption-at-Rest",
+          "analog_config_rule": "s3-default-encryption-kms",
+          "scope": "per-app",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-28",
+              "SC-28 (1)"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "SC-13",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-BR-09",
+          "resource": "aws_vpc_endpoint",
+          "attribute": "private_dns_enabled",
+          "require": {
+            "op": "equals",
+            "value": true
+          },
+          "level": "required",
+          "rationale": "Interface endpoints for bedrock-runtime, bedrock-agent-runtime and bedrock-agentcore keep inference traffic off the internet.",
+          "topic": "Boundary and System Partitioning",
+          "analog_config_rule": "ec2-instance-no-public-ip",
+          "where": {
+            "vpc_endpoint_type": "Interface"
+          },
+          "cfn": {
+            "type": "AWS::EC2::VPCEndpoint",
+            "attribute": "PrivateDnsEnabled",
+            "where": {
+              "VpcEndpointType": "Interface"
+            }
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-7",
+              "SC-32"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AC-3",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AC-17",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "CM-2",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        }
+      ]
+    },
+    "bedrock-agentcore": {
+      "inferred_controls": [
+        {
+          "id": "SGEA-AC-RT-01",
+          "resource": "awscc_bedrockagentcore_runtime",
+          "attribute": "network_configuration.network_mode",
+          "require": {
+            "op": "equals",
+            "value": "VPC"
+          },
+          "level": "required",
+          "rationale": "Agent runtimes execute customer code and reach enclave data; PUBLIC mode puts them outside the enclave boundary.",
+          "topic": "Boundary and System Partitioning",
+          "analog_config_rule": "lambda-inside-vpc",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-7",
+              "SC-32"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AC-3",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AC-17",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "CM-2",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "SC-7",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-AC-RT-02",
+          "resource": "awscc_bedrockagentcore_runtime",
+          "attribute": "network_configuration.network_mode_config.subnets",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "VPC mode must pin private enclave subnets (no IGW route).",
+          "topic": "Network Configuration",
+          "analog_config_rule": "lambda-inside-vpc",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "CM-7",
+              "CM-7 (1)"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AC-3",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AC-17",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "CM-2",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "SC-7",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-AC-RT-03",
+          "resource": "awscc_bedrockagentcore_runtime",
+          "attribute": "network_configuration.network_mode_config.security_groups",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Egress must be restricted to enclave VPC endpoints.",
+          "topic": "Firewall and Network Monitoring",
+          "analog_config_rule": "vpc-sg-open-only-to-authorized-ports",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "CA-3",
+              "CM-6",
+              "SI-4"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AC-17",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "CM-2",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "SC-7",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-AC-RT-04",
+          "resource": "awscc_bedrockagentcore_runtime",
+          "attribute": "authorizer_configuration.custom_jwt_authorizer",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Inbound invocation must authenticate end users against the organization IdP so actions are attributable per user (also required by per-user token control).",
+          "topic": "Authentication and Single Sign-on (SSO)",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-2",
+              "IA-2",
+              "IA-3"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-AC-RT-05",
+          "resource": "awscc_bedrockagentcore_runtime",
+          "attribute": "role_arn",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Execution role scoped to the tenant's resources only; no admin or wildcard actions.",
+          "topic": "Access Control",
+          "analog_config_rule": "iam-policy-no-statements-with-admin-access",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-2",
+              "AC-2 (1)",
+              "AC-5",
+              "AC-6",
+              "AC-6 (7)",
+              "IA-3"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AC-2",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AC-3",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-AC-RT-06",
+          "resource": "awscc_bedrockagentcore_runtime",
+          "attribute": "lifecycle_configuration.idle_runtime_session_timeout",
+          "require": {
+            "op": "max",
+            "value": 900
+          },
+          "level": "required",
+          "rationale": "FedRAMP SC-10 parameter is <=15 min for user sessions; idle agent sessions holding user context must terminate within that.",
+          "topic": "Remote Access",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-17",
+              "AC-17 (3)",
+              "AC-17 (4)",
+              "AC-12",
+              "SC-10"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-AC-RT-07",
+          "resource": "awscc_bedrockagentcore_runtime",
+          "attribute": "request_header_configuration.request_header_allowlist",
+          "require": {
+            "op": "set"
+          },
+          "level": "recommended",
+          "rationale": "Forward only explicitly allow-listed headers into agent code.",
+          "topic": "Data Flow Enforcement",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-4"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-AC-RT-08",
+          "resource": "aws_ecr_repository",
+          "attribute": "image_scanning_configuration.scan_on_push",
+          "require": {
+            "op": "equals",
+            "value": true
+          },
+          "level": "required",
+          "rationale": "Runtime container images come from a private ECR repo with scanning.",
+          "topic": "Vulnerability Monitoring and Scanning",
+          "analog_config_rule": "ecr-private-image-scanning-enabled",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "RA-5"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": false
+        },
+        {
+          "id": "SGEA-AC-RT-09",
+          "resource": "aws_ecr_repository",
+          "attribute": "image_tag_mutability",
+          "require": {
+            "op": "equals",
+            "value": "IMMUTABLE"
+          },
+          "level": "required",
+          "rationale": "Immutable tags make the deployed agent image traceable to a reviewed build (CM-2/CM-3).",
+          "topic": "Configuration Baselines and Software",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "CM-2",
+              "CM-2 (2)",
+              "CM-2 (3)",
+              "CM-2 (7)"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-AC-GW-01",
+          "resource": "awscc_bedrockagentcore_gateway",
+          "attribute": "authorizer_type",
+          "require": {
+            "op": "one_of",
+            "value": [
+              "CUSTOM_JWT",
+              "AWS_IAM"
+            ]
+          },
+          "level": "required",
+          "rationale": "Tool calls must be authenticated; an unauthenticated gateway exposes every target.",
+          "topic": "Authentication and Single Sign-on (SSO)",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-2",
+              "IA-2",
+              "IA-3"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-AC-GW-02",
+          "resource": "awscc_bedrockagentcore_gateway",
+          "attribute": "kms_key_arn",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Customer-managed key for gateway configuration and stored credentials.",
+          "topic": "Encryption-at-Rest",
+          "analog_config_rule": "dynamodb-table-encrypted-kms",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-28",
+              "SC-28 (1)"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": false
+        },
+        {
+          "id": "SGEA-AC-GW-03",
+          "resource": "awscc_bedrockagentcore_gateway",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "The SGEA gateway_tool_path guardrail level is enforced on tool invocations by the AgentCore policy engine, or (where AWS does not offer it, e.g. GovCloud) by the SGEA tool-policy REQUEST interceptor Lambda.",
+          "topic": "Network Access and Resource/Attribute-Based Access Policies",
+          "applies_when": "guardrails.levels contains gateway_tool_path",
+          "any_of": [
+            "policy_engine_configuration",
+            "interceptor_configurations"
+          ],
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-2",
+              "AC-6",
+              "IA-2"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-TC-01",
+          "resource": "awscc_bedrockagentcore_gateway",
+          "attribute": "interceptor_configurations",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Per-user daily / per-team monthly token budgets are enforced on the enclave tool path by the SGEA gateway REQUEST interceptor, which fails closed when the ledger is unreadable or the meter is stale.",
+          "topic": "Network Access and Resource/Attribute-Based Access Policies",
+          "applies_when": "token_control.enabled && services.allow contains bedrock-agentcore",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-2",
+              "AC-6",
+              "IA-2"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-AC-GW-04",
+          "resource": "awscc_bedrockagentcore_policy_engine",
+          "attribute": "encryption_key_arn",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Policy definitions encrypted with the enclave CMK.",
+          "topic": "Key Management",
+          "analog_config_rule": "dynamodb-table-encrypted-kms",
+          "applies_when": "guardrails.levels contains gateway_tool_path && partition != aws-us-gov",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-12",
+              "SC-12 (1)"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": false
+        },
+        {
+          "id": "SGEA-AC-GW-05",
+          "resource": "awscc_bedrockagentcore_gateway_rate_limit",
+          "require": {
+            "op": "set"
+          },
+          "level": "recommended",
+          "rationale": "Rate-limit tool calls to bound runaway agents (denial-of-service protection).",
+          "topic": "Auto-Scaling",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "CP-2 (2)",
+              "SC-5",
+              "SC-6"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-AC-MEM-01",
+          "resource": "awscc_bedrockagentcore_memory",
+          "attribute": "encryption_key_arn",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Agent memory holds conversation content (PII/PHI); encrypt with the enclave CMK.",
+          "topic": "Encryption-at-Rest",
+          "analog_config_rule": "dynamodb-table-encrypted-kms",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-28",
+              "SC-28 (1)"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": false
+        },
+        {
+          "id": "SGEA-AC-MEM-02",
+          "resource": "awscc_bedrockagentcore_memory",
+          "attribute": "event_expiry_duration",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Set an explicit expiry (days) no longer than the organization's data-retention schedule for conversational data.",
+          "topic": "Data Retention",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SI-12"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-AC-MEM-03",
+          "resource": "awscc_bedrockagentcore_memory",
+          "attribute": "memory_execution_role_arn",
+          "require": {
+            "op": "set"
+          },
+          "level": "recommended",
+          "rationale": "Dedicated least-privilege role for memory strategies that invoke models.",
+          "topic": "Access Control",
+          "analog_config_rule": "iam-policy-no-statements-with-admin-access",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-2",
+              "AC-2 (1)",
+              "AC-5",
+              "AC-6",
+              "AC-6 (7)",
+              "IA-3"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AC-2",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AC-3",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-AC-CI-01",
+          "resource": "awscc_bedrockagentcore_code_interpreter_custom",
+          "attribute": "network_configuration.network_mode",
+          "require": {
+            "op": "one_of",
+            "value": [
+              "SANDBOX",
+              "VPC"
+            ]
+          },
+          "level": "required",
+          "rationale": "Model-generated code must not run with direct internet access.",
+          "topic": "Boundary and System Partitioning",
+          "analog_config_rule": "sagemaker-notebook-no-direct-internet-access",
+          "scope": "per-app",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-7",
+              "SC-32"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AC-3",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AC-17",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "CM-2",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "SC-7",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-AC-BR-01",
+          "resource": "awscc_bedrockagentcore_browser_custom",
+          "attribute": "network_configuration.network_mode",
+          "require": {
+            "op": "equals",
+            "value": "VPC"
+          },
+          "level": "required",
+          "rationale": "Browser sessions egress only through enclave-controlled network paths (proxy / firewall).",
+          "topic": "Boundary and System Partitioning",
+          "analog_config_rule": "sagemaker-notebook-no-direct-internet-access",
+          "scope": "per-app",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-7",
+              "SC-32"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AC-3",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AC-17",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "CM-2",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "SC-7",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-AC-ID-01",
+          "resource": "aws_bedrockagentcore_token_vault_cmk",
+          "attribute": "kms_configuration.key_type",
+          "require": {
+            "op": "equals",
+            "value": "CustomerManagedKey"
+          },
+          "level": "required",
+          "rationale": "Outbound OAuth tokens and API keys for tools are stored under the enclave CMK.",
+          "topic": "Key Management",
+          "analog_config_rule": "secretsmanager-using-cmk",
+          "cfn": {
+            "type": "Custom::SgeaTokenVaultCmk",
+            "attribute": "Create",
+            "require": {
+              "op": "contains",
+              "value": "CustomerManagedKey"
+            }
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-12",
+              "SC-12 (1)"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": false
+        },
+        {
+          "id": "SGEA-AC-ID-02",
+          "resource": "awscc_bedrockagentcore_o_auth_2_credential_provider",
+          "attribute": "oauth_2_provider_config_input.custom_oauth_2_provider_config.client_secret_config.secret_id",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Client secrets referenced from Secrets Manager (rotatable), never inlined in IaC.",
+          "topic": "Authenticator Management",
+          "analog_config_rule": "secretsmanager-rotation-enabled-check",
+          "scope": "per-app",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "IA-5"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": false
+        },
+        {
+          "id": "SGEA-AC-ID-03",
+          "resource": "awscc_bedrockagentcore_workload_identity",
+          "attribute": "allowed_resource_oauth_2_return_urls",
+          "require": {
+            "op": "set"
+          },
+          "level": "recommended",
+          "rationale": "Restrict OAuth return URLs to enclave applications.",
+          "topic": "Data Flow Enforcement",
+          "scope": "per-app",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-4"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-AC-ID-04",
+          "resource": "awscc_bedrockagentcore_resource_policy",
+          "attribute": "policy",
+          "require": {
+            "op": "contains",
+            "value": "aws:SourceVpce"
+          },
+          "level": "required",
+          "rationale": "The runtime uses OAuth (JWT) inbound auth; AWS requires a wildcard principal and network conditions to restrict it, so invocation is limited to the enclave bedrock-agentcore VPC endpoint (aws:SourceVpce).",
+          "topic": "Network Access and Resource/Attribute-Based Access Policies",
+          "analog_config_rule": "lambda-function-public-access-prohibited",
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-2",
+              "AC-6",
+              "IA-2"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AC-3",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AC-17",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "CM-2",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-AC-LOG-01",
+          "resource": "aws_cloudwatch_log_group",
+          "attribute": "retention_in_days",
+          "require": {
+            "op": "min"
+          },
+          "level": "required",
+          "rationale": "AgentCore runtime / gateway / memory log groups retain for the baseline's retention period.",
+          "topic": "Log Retention",
+          "analog_config_rule": "cw-loggroup-retention-period-check",
+          "value_from": "logging.retention_days",
+          "cfn": {
+            "type": "AWS::Logs::LogGroup",
+            "attribute": "RetentionInDays"
+          },
+          "resolved_value": 90,
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AU-11"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AU-6",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AU-11",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "SI-12",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-AC-LOG-02",
+          "resource": "aws_cloudwatch_log_group",
+          "attribute": "kms_key_id",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Agent logs and traces can contain prompts and tool payloads (PII/PHI).",
+          "topic": "Encryption-at-Rest",
+          "analog_config_rule": "cloudwatch-log-group-encrypted",
+          "cfn": {
+            "type": "AWS::Logs::LogGroup",
+            "attribute": "KmsKeyId"
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-28",
+              "SC-28 (1)"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AU-9",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-AC-LOG-03",
+          "resource": "aws_cloudtrail",
+          "attribute": "advanced_event_selector.field_selector",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "Capture bedrock-agentcore data events (InvokeAgentRuntime, tool invocations) for per-user attribution.",
+          "topic": "Audit Logging",
+          "analog_config_rule": "cloudtrail-s3-dataevents-enabled",
+          "cfn": {
+            "type": "AWS::CloudTrail::Trail",
+            "attribute": "AdvancedEventSelectors.FieldSelectors"
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AU-2",
+              "AU-3",
+              "AU-12"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AC-2",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AU-2",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AU-3",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AU-6",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AU-12",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "CA-7",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "SI-4",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        }
+      ]
+    },
+    "dod-scca": {
+      "inferred_controls": [
+        {
+          "id": "SGEA-SCCA-01",
+          "resource": "aws_networkfirewall_firewall",
+          "attribute": "delete_protection",
+          "require": {
+            "op": "equals",
+            "value": true
+          },
+          "level": "required",
+          "rationale": "SCCA VDSS \u2014 the enclave boundary is inspected by a protected (non-deletable) AWS Network Firewall.",
+          "topic": "Boundary and System Partitioning",
+          "applies_when": "baselines contains dod-il4|dod-il5",
+          "cfn": {
+            "type": "AWS::NetworkFirewall::Firewall",
+            "attribute": "DeleteProtection"
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "SC-7",
+              "SC-32"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-SCCA-02",
+          "resource": "aws_networkfirewall_firewall_policy",
+          "attribute": "firewall_policy.stateful_default_actions",
+          "require": {
+            "op": "contains",
+            "value": "aws:drop_strict"
+          },
+          "level": "required",
+          "rationale": "SCCA VDSS default-deny \u2014 traffic not matching an allow rule is dropped.",
+          "topic": "Firewall and Network Monitoring",
+          "applies_when": "baselines contains dod-il4|dod-il5",
+          "cfn": {
+            "type": "AWS::NetworkFirewall::FirewallPolicy",
+            "attribute": "FirewallPolicy.StatefulDefaultActions"
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "CA-3",
+              "CM-6",
+              "SI-4"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-SCCA-03",
+          "resource": "aws_networkfirewall_logging_configuration",
+          "attribute": "logging_configuration",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "SCCA VDMS \u2014 firewall alert and flow logs feed the mission owner's monitoring.",
+          "topic": "Audit Logging",
+          "applies_when": "baselines contains dod-il4|dod-il5",
+          "cfn": {
+            "type": "AWS::NetworkFirewall::LoggingConfiguration",
+            "attribute": "LoggingConfiguration"
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AU-2",
+              "AU-3",
+              "AU-12"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-SCCA-04",
+          "resource": "aws_flow_log",
+          "attribute": "traffic_type",
+          "require": {
+            "op": "equals",
+            "value": "ALL"
+          },
+          "level": "required",
+          "rationale": "SCCA VDMS \u2014 VPC flow logs for all enclave traffic.",
+          "topic": "Firewall and Network Monitoring",
+          "analog_config_rule": "vpc-flow-logs-enabled",
+          "applies_when": "baselines contains dod-il4|dod-il5",
+          "cfn": {
+            "type": "AWS::EC2::FlowLog",
+            "attribute": "TrafficType"
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "CA-3",
+              "CM-6",
+              "SI-4"
+            ]
+          },
+          "controls_from_analog_rule": [
+            {
+              "id": "AU-2",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AU-3",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AU-6",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "AU-12",
+              "framework": "FedRAMP-Low"
+            },
+            {
+              "id": "SC-7",
+              "framework": "FedRAMP-Low"
+            }
+          ],
+          "analog_rule_in_baseline_pack": true
+        },
+        {
+          "id": "SGEA-SCCA-05",
+          "resource": "aws_securityhub_standards_subscription",
+          "attribute": "standards_arn",
+          "require": {
+            "op": "contains",
+            "value": "nist-800-53"
+          },
+          "level": "required",
+          "rationale": "SCCA VDMS \u2014 continuous NIST 800-53 posture assessment.",
+          "topic": "Security Monitoring and Incident Response",
+          "applies_when": "baselines contains dod-il4|dod-il5",
+          "cfn": {
+            "type": "AWS::SecurityHub::Standard",
+            "attribute": "StandardsArn"
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "IR-4",
+              "IR-5",
+              "IR-6",
+              "SI-4"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        }
+      ]
+    }
+  },
+  "inferred_controls_note": "service_guidance.*.inferred_controls are SGEA-inferred (provenance=inferred), not AWS-published; attributes validated against provider schema {'registry.terraform.io/hashicorp/aws': '6.69.0', 'registry.terraform.io/hashicorp/awscc': '1.105.0', 'registry.terraform.io/hashicorp/external': '2.4.2', 'registry.terraform.io/hashicorp/local': '2.9.1', 'registry.terraform.io/hashicorp/null': '3.3.2', 'registry.terraform.io/hashicorp/time': '0.14.2', 'terraform.io/builtin/terraform': None}. Require ISSO review."
+}

@@ -1,0 +1,16 @@
+{
+  "profile": {
+    "id": "fedramp-moderate-hipaa-commercial",
+    "name": "FedRAMP Moderate + HIPAA (commercial)",
+    "description": "The reference profile. Composes the FedRAMP Moderate baseline with the HIPAA overlay in the commercial AWS partition. Sandbox-validated on Terraform and CDK.",
+    "extends": ["fedramp-moderate", "hipaa"],
+    "reference_adopter": ""
+  },
+  "baselines": ["fedramp-moderate", "hipaa"],
+  "emit": {
+    "targets": ["terraform", "cdk"],
+    "terraform": { "backend": "s3" },
+    "cdk": { "language": "typescript" }
+  },
+  "overrides": {}
+}

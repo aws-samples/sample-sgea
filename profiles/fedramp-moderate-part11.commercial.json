@@ -1,0 +1,16 @@
+{
+  "profile": {
+    "id": "fedramp-moderate-part11-commercial",
+    "name": "FedRAMP Moderate + FDA 21 CFR Part 11 / GxP (commercial)",
+    "description": "Regulated-research composite: the FedRAMP Moderate baseline plus the FDA 21 CFR Part 11 / GxP overlay in the commercial AWS partition. Add the HIPAA overlay as well when the clinical data includes ePHI (extends: fedramp-moderate, hipaa, fda-21-cfr-part-11). Part 11 electronic-signature and computer-system-validation (CSV) obligations are partly process controls owned by the quality/validation team — see the vertical's open items.",
+    "extends": ["fedramp-moderate", "fda-21-cfr-part-11"],
+    "reference_adopter": ""
+  },
+  "baselines": ["fedramp-moderate", "fda-21-cfr-part-11"],
+  "emit": {
+    "targets": ["terraform", "cdk"],
+    "terraform": { "backend": "s3" },
+    "cdk": { "language": "typescript" }
+  },
+  "overrides": {}
+}

@@ -1,0 +1,2174 @@
+{
+ "_doc": "SGEA-authored: how to evaluate AWS Config conformance-pack rules against a Terraform PLAN (preventive), for the resource types SGEA emits. The rules themselves (and their parameters) are AWS's, from catalog/<baseline>.json; only this rule->plan-attribute mapping is SGEA's. Validated against sources/provider-schema/ by tools/build_catalog.py. `sgea check` evaluates every mapped rule that a composed baseline's pack contains; rules whose resource type is not in the plan are N/A (Config still evaluates them at runtime). `subject`: the resource type the rule is about (default: `resource`); when the subject is absent the rule is N/A, when it is present but `resource` is missing the rule FAILS. `link`: [resource_attr, subject_attr] evaluates per subject instance; `exempt`: {tag: [values]} skips subject instances carrying that tag (reported). ops: equals | not_equals | one_of | set | min | max | contains | count_min | exists. value_param: take the target from the rule's pack parameter; value_from: from the resolved config. `cfn_rules`: the same rules expressed against a synthesized CloudFormation template (CDK output), evaluated by `sgea check --cfn`; `__ref__` links to a resource's logical id via {Ref}. `config_evidence`: when the planned value is only known after apply, PASS if EVERY call of `module_source` in the plan configuration sets `input` to the constant `equals` (the module's documented behavior).",
+ "rules": {
+  "s3-bucket-versioning-enabled": [
+   {
+    "resource": "aws_s3_bucket_versioning",
+    "attribute": "versioning_configuration.status",
+    "require": {
+     "op": "equals",
+     "value": "Enabled"
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   }
+  ],
+  "s3-default-encryption-kms": [
+   {
+    "resource": "aws_s3_bucket_server_side_encryption_configuration",
+    "attribute": "rule.apply_server_side_encryption_by_default.sse_algorithm",
+    "require": {
+     "op": "equals",
+     "value": "aws:kms"
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ],
+    "exempt": {
+     "sgea:role": [
+      "access-log-sink"
+     ]
+    }
+   }
+  ],
+  "s3-bucket-server-side-encryption-enabled": [
+   {
+    "resource": "aws_s3_bucket_server_side_encryption_configuration",
+    "attribute": "rule.apply_server_side_encryption_by_default.sse_algorithm",
+    "require": {
+     "op": "set"
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   }
+  ],
+  "s3-bucket-level-public-access-prohibited": [
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "block_public_acls",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   },
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "block_public_policy",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   },
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "ignore_public_acls",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   },
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "restrict_public_buckets",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   }
+  ],
+  "s3-bucket-acl-prohibited": [
+   {
+    "resource": "aws_s3_bucket_ownership_controls",
+    "attribute": "rule.object_ownership",
+    "require": {
+     "op": "equals",
+     "value": "BucketOwnerEnforced"
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   }
+  ],
+  "s3-bucket-ssl-requests-only": [
+   {
+    "resource": "aws_s3_bucket_policy",
+    "attribute": "policy",
+    "require": {
+     "op": "contains",
+     "value": "aws:SecureTransport"
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ],
+    "config_evidence": {
+     "module_source": "terraform-aws-modules/s3-bucket/aws",
+     "input": "attach_deny_insecure_transport_policy",
+     "equals": true
+    }
+   }
+  ],
+  "s3-bucket-default-lock-enabled": [
+   {
+    "resource": "aws_s3_bucket",
+    "attribute": "object_lock_enabled",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "exempt": {
+     "sgea:role": [
+      "access-log-sink",
+      "config-delivery"
+     ]
+    }
+   }
+  ],
+  "s3-bucket-logging-enabled": [
+   {
+    "resource": "aws_s3_bucket_logging",
+    "require": {
+     "op": "exists"
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ],
+    "exempt": {
+     "sgea:role": [
+      "access-log-sink"
+     ]
+    }
+   }
+  ],
+  "s3-bucket-replication-enabled": [
+   {
+    "resource": "aws_s3_bucket_replication_configuration",
+    "require": {
+     "op": "exists"
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ],
+    "exempt": {
+     "sgea:role": [
+      "access-log-sink",
+      "replica",
+      "config-delivery"
+     ]
+    }
+   }
+  ],
+  "s3-bucket-cross-region-replication-enabled": [
+   {
+    "resource": "aws_s3_bucket_replication_configuration",
+    "require": {
+     "op": "exists"
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ],
+    "exempt": {
+     "sgea:role": [
+      "access-log-sink",
+      "replica",
+      "config-delivery"
+     ]
+    }
+   }
+  ],
+  "s3-event-notifications-enabled": [
+   {
+    "resource": "aws_s3_bucket_notification",
+    "attribute": "topic",
+    "require": {
+     "op": "set"
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ],
+    "exempt": {
+     "sgea:region": [
+      "replica"
+     ]
+    }
+   }
+  ],
+  "s3-version-lifecycle-policy-check": [
+   {
+    "resource": "aws_s3_bucket_lifecycle_configuration",
+    "require": {
+     "op": "exists"
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   }
+  ],
+  "cloudtrail-enabled": [
+   {
+    "resource": "aws_cloudtrail",
+    "require": {
+     "op": "exists"
+    }
+   }
+  ],
+  "multi-region-cloudtrail-enabled": [
+   {
+    "resource": "aws_cloudtrail",
+    "attribute": "is_multi_region_trail",
+    "require": {
+     "op": "equals",
+     "value": true
+    }
+   }
+  ],
+  "cloud-trail-log-file-validation-enabled": [
+   {
+    "resource": "aws_cloudtrail",
+    "attribute": "enable_log_file_validation",
+    "require": {
+     "op": "equals",
+     "value": true
+    }
+   }
+  ],
+  "cloud-trail-encryption-enabled": [
+   {
+    "resource": "aws_cloudtrail",
+    "attribute": "kms_key_id",
+    "require": {
+     "op": "set"
+    }
+   }
+  ],
+  "cloud-trail-cloud-watch-logs-enabled": [
+   {
+    "resource": "aws_cloudtrail",
+    "attribute": "cloud_watch_logs_group_arn",
+    "require": {
+     "op": "set"
+    }
+   }
+  ],
+  "cloudtrail-s3-dataevents-enabled": [
+   {
+    "resource": "aws_cloudtrail",
+    "attribute": "advanced_event_selector.field_selector.equals",
+    "require": {
+     "op": "contains",
+     "value": "AWS::S3::Object"
+    }
+   }
+  ],
+  "cloudwatch-log-group-encrypted": [
+   {
+    "resource": "aws_cloudwatch_log_group",
+    "attribute": "kms_key_id",
+    "require": {
+     "op": "set"
+    }
+   }
+  ],
+  "cw-loggroup-retention-period-check": [
+   {
+    "resource": "aws_cloudwatch_log_group",
+    "attribute": "retention_in_days",
+    "require": {
+     "op": "min"
+    },
+    "value_from": "logging.retention_days"
+   }
+  ],
+  "cmk-backing-key-rotation-enabled": [
+   {
+    "resource": "aws_kms_key",
+    "attribute": "enable_key_rotation",
+    "require": {
+     "op": "equals",
+     "value": true
+    }
+   }
+  ],
+  "kms-cmk-not-scheduled-for-deletion": [
+   {
+    "resource": "aws_kms_key",
+    "require": {
+     "op": "exists"
+    }
+   }
+  ],
+  "dynamodb-table-encrypted-kms": [
+   {
+    "resource": "aws_dynamodb_table",
+    "attribute": "server_side_encryption.enabled",
+    "require": {
+     "op": "equals",
+     "value": true
+    }
+   }
+  ],
+  "dynamodb-pitr-enabled": [
+   {
+    "resource": "aws_dynamodb_table",
+    "attribute": "point_in_time_recovery.enabled",
+    "require": {
+     "op": "equals",
+     "value": true
+    }
+   }
+  ],
+  "ecr-private-image-scanning-enabled": [
+   {
+    "resource": "aws_ecr_repository",
+    "attribute": "image_scanning_configuration.scan_on_push",
+    "require": {
+     "op": "equals",
+     "value": true
+    }
+   }
+  ],
+  "ecr-private-lifecycle-policy-configured": [
+   {
+    "resource": "aws_ecr_lifecycle_policy",
+    "require": {
+     "op": "exists"
+    },
+    "subject": "aws_ecr_repository"
+   }
+  ],
+  "rds-storage-encrypted": [
+   {
+    "resource": "aws_rds_cluster",
+    "attribute": "storage_encrypted",
+    "require": {
+     "op": "equals",
+     "value": true
+    }
+   }
+  ],
+  "rds-snapshot-encrypted": [
+   {
+    "resource": "aws_rds_cluster",
+    "attribute": "kms_key_id",
+    "require": {
+     "op": "set"
+    }
+   }
+  ],
+  "rds-cluster-deletion-protection-enabled": [
+   {
+    "resource": "aws_rds_cluster",
+    "attribute": "deletion_protection",
+    "require": {
+     "op": "equals",
+     "value": true
+    }
+   }
+  ],
+  "rds-instance-deletion-protection-enabled": [
+   {
+    "resource": "aws_rds_cluster",
+    "attribute": "deletion_protection",
+    "require": {
+     "op": "equals",
+     "value": true
+    }
+   }
+  ],
+  "rds-logging-enabled": [
+   {
+    "resource": "aws_rds_cluster",
+    "attribute": "enabled_cloudwatch_logs_exports",
+    "require": {
+     "op": "set"
+    }
+   }
+  ],
+  "db-instance-backup-enabled": [
+   {
+    "resource": "aws_rds_cluster",
+    "attribute": "backup_retention_period",
+    "require": {
+     "op": "min",
+     "value": 1
+    }
+   }
+  ],
+  "rds-instance-default-admin-check": [
+   {
+    "resource": "aws_rds_cluster",
+    "attribute": "master_username",
+    "require": {
+     "op": "not_equals",
+     "value": "postgres"
+    }
+   }
+  ],
+  "rds-instance-public-access-check": [
+   {
+    "resource": "aws_rds_cluster_instance",
+    "attribute": "publicly_accessible",
+    "require": {
+     "op": "equals",
+     "value": false
+    }
+   }
+  ],
+  "rds-enhanced-monitoring-enabled": [
+   {
+    "resource": "aws_rds_cluster_instance",
+    "attribute": "monitoring_interval",
+    "require": {
+     "op": "min",
+     "value": 1
+    }
+   }
+  ],
+  "rds-automatic-minor-version-upgrade-enabled": [
+   {
+    "resource": "aws_rds_cluster_instance",
+    "attribute": "auto_minor_version_upgrade",
+    "require": {
+     "op": "equals",
+     "value": true
+    }
+   }
+  ],
+  "rds-cluster-multi-az-enabled": [
+   {
+    "resource": "aws_rds_cluster_instance",
+    "require": {
+     "op": "count_min",
+     "value": 2
+    },
+    "subject": "aws_rds_cluster",
+    "link": [
+     "cluster_identifier",
+     "cluster_identifier"
+    ]
+   }
+  ],
+  "rds-multi-az-support": [
+   {
+    "resource": "aws_rds_cluster_instance",
+    "require": {
+     "op": "count_min",
+     "value": 2
+    },
+    "subject": "aws_rds_cluster",
+    "link": [
+     "cluster_identifier",
+     "cluster_identifier"
+    ]
+   }
+  ],
+  "backup-recovery-point-encrypted": [
+   {
+    "resource": "aws_backup_vault",
+    "attribute": "kms_key_arn",
+    "require": {
+     "op": "set"
+    }
+   }
+  ],
+  "backup-recovery-point-manual-deletion-disabled": [
+   {
+    "resource": "aws_backup_vault_lock_configuration",
+    "require": {
+     "op": "exists"
+    },
+    "subject": "aws_backup_vault"
+   },
+   {
+    "resource": "aws_backup_vault_policy",
+    "attribute": "policy",
+    "require": {
+     "op": "contains",
+     "value": "backup:DeleteRecoveryPoint"
+    },
+    "subject": "aws_backup_vault"
+   }
+  ],
+  "backup-plan-min-frequency-and-min-retention-check": [
+   {
+    "resource": "aws_backup_plan",
+    "attribute": "rule.lifecycle.delete_after",
+    "require": {
+     "op": "min"
+    },
+    "value_param": "requiredRetentionDays"
+   }
+  ],
+  "backup-recovery-point-minimum-retention-check": [
+   {
+    "resource": "aws_backup_plan",
+    "attribute": "rule.lifecycle.delete_after",
+    "require": {
+     "op": "min"
+    },
+    "value_param": "requiredRetentionDays"
+   }
+  ],
+  "guardduty-enabled-centralized": [
+   {
+    "resource": "aws_guardduty_detector",
+    "attribute": "enable",
+    "require": {
+     "op": "equals",
+     "value": true
+    }
+   }
+  ],
+  "securityhub-enabled": [
+   {
+    "resource": "aws_securityhub_account",
+    "require": {
+     "op": "exists"
+    }
+   }
+  ],
+  "vpc-flow-logs-enabled": [
+   {
+    "resource": "aws_flow_log",
+    "attribute": "traffic_type",
+    "require": {
+     "op": "set"
+    },
+    "subject": "aws_vpc_endpoint"
+   }
+  ],
+  "ec2-ebs-encryption-by-default": [
+   {
+    "resource": "aws_ebs_encryption_by_default",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "enabled"
+   },
+   {
+    "resource": "aws_ebs_default_kms_key",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "key_arn"
+   }
+  ],
+  "ebs-snapshot-public-restorable-check": [
+   {
+    "resource": "aws_ebs_snapshot_block_public_access",
+    "require": {
+     "op": "equals",
+     "value": "block-all-sharing"
+    },
+    "attribute": "state"
+   }
+  ],
+  "s3-account-level-public-access-blocks-periodic": [
+   {
+    "resource": "aws_s3_account_public_access_block",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "block_public_acls"
+   },
+   {
+    "resource": "aws_s3_account_public_access_block",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "block_public_policy"
+   },
+   {
+    "resource": "aws_s3_account_public_access_block",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "ignore_public_acls"
+   },
+   {
+    "resource": "aws_s3_account_public_access_block",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "restrict_public_buckets"
+   }
+  ],
+  "vpc-default-security-group-closed": [
+   {
+    "resource": "aws_default_security_group",
+    "require": {
+     "op": "empty"
+    },
+    "attribute": "ingress"
+   },
+   {
+    "resource": "aws_default_security_group",
+    "require": {
+     "op": "empty"
+    },
+    "attribute": "egress"
+   }
+  ],
+  "iam-password-policy": [
+   {
+    "resource": "aws_iam_account_password_policy",
+    "require": {
+     "op": "min"
+    },
+    "attribute": "minimum_password_length",
+    "value_param": "MinimumPasswordLength"
+   },
+   {
+    "resource": "aws_iam_account_password_policy",
+    "require": {
+     "op": "min"
+    },
+    "attribute": "password_reuse_prevention",
+    "value_param": "PasswordReusePrevention"
+   },
+   {
+    "resource": "aws_iam_account_password_policy",
+    "require": {
+     "op": "max"
+    },
+    "attribute": "max_password_age",
+    "value_param": "MaxPasswordAge"
+   },
+   {
+    "resource": "aws_iam_account_password_policy",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "require_lowercase_characters"
+   },
+   {
+    "resource": "aws_iam_account_password_policy",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "require_uppercase_characters"
+   },
+   {
+    "resource": "aws_iam_account_password_policy",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "require_numbers"
+   },
+   {
+    "resource": "aws_iam_account_password_policy",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "require_symbols"
+   }
+  ],
+  "iam-password-policy-2": [
+   {
+    "resource": "aws_iam_account_password_policy",
+    "require": {
+     "op": "exists"
+    }
+   }
+  ],
+  "iam-no-inline-policy-check": [
+   {
+    "resource": "aws_iam_role_policy",
+    "require": {
+     "op": "absent"
+    }
+   },
+   {
+    "resource": "aws_iam_user_policy",
+    "require": {
+     "op": "absent"
+    }
+   },
+   {
+    "resource": "aws_iam_group_policy",
+    "require": {
+     "op": "absent"
+    }
+   }
+  ],
+  "iam-policy-no-statements-with-admin-access": [
+   {
+    "resource": "aws_iam_policy",
+    "require": {
+     "op": "iam_no_admin"
+    },
+    "attribute": "policy"
+   }
+  ],
+  "iam-policy-no-statements-with-full-access": [
+   {
+    "resource": "aws_iam_policy",
+    "require": {
+     "op": "iam_no_full_access"
+    },
+    "attribute": "policy"
+   }
+  ],
+  "iam-customer-policy-blocked-kms-actions": [
+   {
+    "resource": "aws_iam_policy",
+    "require": {
+     "op": "iam_no_blocked_kms"
+    },
+    "attribute": "policy",
+    "value_param": "blockedActionsPatterns"
+   }
+  ],
+  "iam-inline-policy-blocked-kms-actions": [
+   {
+    "resource": "aws_iam_role_policy",
+    "require": {
+     "op": "iam_no_blocked_kms"
+    },
+    "attribute": "policy",
+    "value_param": "blockedActionsPatterns"
+   }
+  ],
+  "aurora-resources-protected-by-backup-plan": [
+   {
+    "resource": "aws_backup_selection",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "resources",
+    "subject": "aws_rds_cluster"
+   }
+  ],
+  "rds-in-backup-plan": [
+   {
+    "resource": "aws_backup_selection",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "resources",
+    "subject": "aws_rds_cluster"
+   }
+  ],
+  "rds-resources-protected-by-backup-plan": [
+   {
+    "resource": "aws_backup_selection",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "resources",
+    "subject": "aws_rds_cluster"
+   }
+  ],
+  "dynamodb-in-backup-plan": [
+   {
+    "resource": "aws_backup_selection",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "resources",
+    "subject": "aws_dynamodb_table"
+   }
+  ],
+  "dynamodb-resources-protected-by-backup-plan": [
+   {
+    "resource": "aws_backup_selection",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "resources",
+    "subject": "aws_dynamodb_table"
+   }
+  ],
+  "dynamodb-autoscaling-enabled": [
+   {
+    "resource": "aws_dynamodb_table",
+    "require": {
+     "op": "equals",
+     "value": "PAY_PER_REQUEST"
+    },
+    "attribute": "billing_mode"
+   }
+  ],
+  "s3-resources-protected-by-backup-plan": [
+   {
+    "resource": "aws_backup_selection",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "resources",
+    "subject": "aws_s3_bucket",
+    "exempt": {
+     "sgea:role": [
+      "access-log-sink",
+      "replica"
+     ]
+    }
+   }
+  ],
+  "lambda-concurrency-check": [
+   {
+    "resource": "aws_lambda_function",
+    "require": {
+     "op": "min"
+    },
+    "attribute": "reserved_concurrent_executions",
+    "value_param": "ConcurrencyLimitLow"
+   },
+   {
+    "resource": "aws_lambda_function",
+    "require": {
+     "op": "max"
+    },
+    "attribute": "reserved_concurrent_executions",
+    "value_param": "ConcurrencyLimitHigh"
+   }
+  ],
+  "lambda-inside-vpc": [
+   {
+    "resource": "aws_lambda_function",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "vpc_config.subnet_ids"
+   }
+  ],
+  "lambda-dlq-check": [
+   {
+    "resource": "aws_lambda_function",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "dead_letter_config.target_arn"
+   }
+  ],
+  "lambda-function-public-access-prohibited": [
+   {
+    "resource": "aws_lambda_permission",
+    "require": {
+     "op": "not_equals",
+     "value": "*"
+    },
+    "attribute": "principal"
+   }
+  ],
+  "cloudwatch-alarm-action-check": [
+   {
+    "resource": "aws_cloudwatch_metric_alarm",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "alarm_actions"
+   },
+   {
+    "resource": "aws_cloudwatch_metric_alarm",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "insufficient_data_actions",
+    "when_param": "insufficientDataActionRequired"
+   },
+   {
+    "resource": "aws_cloudwatch_metric_alarm",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "ok_actions",
+    "when_param": "okActionRequired"
+   }
+  ],
+  "sns-encrypted-kms": [
+   {
+    "resource": "aws_sns_topic",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "kms_master_key_id"
+   }
+  ],
+  "secretsmanager-using-cmk": [
+   {
+    "resource": "aws_rds_cluster",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "master_user_secret_kms_key_id"
+   }
+  ],
+  "secretsmanager-rotation-enabled-check": [
+   {
+    "resource": "aws_rds_cluster",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "manage_master_user_password"
+   }
+  ],
+  "cloudtrail-security-trail-enabled": [
+   {
+    "resource": "aws_cloudtrail",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "is_multi_region_trail"
+   },
+   {
+    "resource": "aws_cloudtrail",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "enable_log_file_validation"
+   },
+   {
+    "resource": "aws_cloudtrail",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "kms_key_id"
+   },
+   {
+    "resource": "aws_cloudtrail",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "include_global_service_events"
+   }
+  ],
+  "cloudtrail-s3-bucket-public-access-prohibited": [
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "block_public_acls",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   },
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "block_public_policy",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   },
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "ignore_public_acls",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   },
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "restrict_public_buckets",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   }
+  ],
+  "s3-bucket-public-read-prohibited": [
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "block_public_acls",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   },
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "block_public_policy",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   },
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "ignore_public_acls",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   },
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "restrict_public_buckets",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   }
+  ],
+  "s3-bucket-public-write-prohibited": [
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "block_public_acls",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   },
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "block_public_policy",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   },
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "ignore_public_acls",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   },
+   {
+    "resource": "aws_s3_bucket_public_access_block",
+    "attribute": "restrict_public_buckets",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "subject": "aws_s3_bucket",
+    "link": [
+     "bucket",
+     "bucket"
+    ]
+   }
+  ],
+  "inspector-ecr-scan-enabled": [
+   {
+    "resource": "aws_inspector2_enabler",
+    "require": {
+     "op": "contains",
+     "value": "ECR"
+    },
+    "attribute": "resource_types"
+   }
+  ],
+  "inspector-lambda-standard-scan-enabled": [
+   {
+    "resource": "aws_inspector2_enabler",
+    "require": {
+     "op": "contains",
+     "value": "LAMBDA"
+    },
+    "attribute": "resource_types"
+   }
+  ],
+  "inspector-ec2-scan-enabled": [
+   {
+    "resource": "aws_inspector2_enabler",
+    "require": {
+     "op": "contains",
+     "value": "EC2"
+    },
+    "attribute": "resource_types"
+   }
+  ]
+ },
+ "_exemption_reasons": {
+  "access-log-sink": "S3 server-access-log target: cannot log to itself; SSE-KMS targets are not supported by log delivery (SSE-S3 used); no object lock / replication needed for access logs.",
+  "replica": "Cross-region replica of the log store: it is the replication destination.",
+  "config-delivery": "AWS Config delivery bucket: no Object Lock because S3 rejects writes to Object Lock buckets without a checksum header and the AWS Config writer sends none (verified: InsufficientDeliveryPolicyException); not replicated \u2014 AWS Config retains configuration history itself. Otherwise identical hardening (SSE-KMS, versioning, TLS-only, access logging, lifecycle)."
+ },
+ "cfn_rules": {
+  "s3-bucket-versioning-enabled": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": "Enabled"
+    },
+    "attribute": "VersioningConfiguration.Status"
+   }
+  ],
+  "s3-default-encryption-kms": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": "aws:kms"
+    },
+    "attribute": "BucketEncryption.ServerSideEncryptionConfiguration.ServerSideEncryptionByDefault.SSEAlgorithm",
+    "exempt": {
+     "sgea:role": [
+      "access-log-sink"
+     ]
+    }
+   }
+  ],
+  "s3-bucket-server-side-encryption-enabled": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "BucketEncryption.ServerSideEncryptionConfiguration.ServerSideEncryptionByDefault.SSEAlgorithm"
+   }
+  ],
+  "s3-bucket-level-public-access-prohibited": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.BlockPublicAcls"
+   },
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.BlockPublicPolicy"
+   },
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.IgnorePublicAcls"
+   },
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.RestrictPublicBuckets"
+   }
+  ],
+  "s3-bucket-acl-prohibited": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": "BucketOwnerEnforced"
+    },
+    "attribute": "OwnershipControls.Rules.ObjectOwnership"
+   }
+  ],
+  "s3-bucket-ssl-requests-only": [
+   {
+    "resource": "AWS::S3::BucketPolicy",
+    "require": {
+     "op": "contains",
+     "value": "aws:SecureTransport"
+    },
+    "attribute": "PolicyDocument",
+    "subject": "AWS::S3::Bucket",
+    "link": [
+     "Bucket",
+     "__ref__"
+    ]
+   }
+  ],
+  "s3-bucket-default-lock-enabled": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "ObjectLockEnabled",
+    "exempt": {
+     "sgea:role": [
+      "access-log-sink",
+      "config-delivery"
+     ]
+    }
+   }
+  ],
+  "s3-bucket-logging-enabled": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "LoggingConfiguration.DestinationBucketName",
+    "exempt": {
+     "sgea:role": [
+      "access-log-sink"
+     ]
+    }
+   }
+  ],
+  "s3-bucket-replication-enabled": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "ReplicationConfiguration",
+    "exempt": {
+     "sgea:role": [
+      "access-log-sink",
+      "replica",
+      "config-delivery"
+     ]
+    }
+   }
+  ],
+  "s3-bucket-cross-region-replication-enabled": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "ReplicationConfiguration",
+    "exempt": {
+     "sgea:role": [
+      "access-log-sink",
+      "replica",
+      "config-delivery"
+     ]
+    }
+   }
+  ],
+  "s3-event-notifications-enabled": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "attribute": "NotificationConfiguration.TopicConfigurations",
+    "require": {
+     "op": "set"
+    },
+    "exempt": {
+     "sgea:region": [
+      "replica"
+     ]
+    }
+   }
+  ],
+  "s3-version-lifecycle-policy-check": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "LifecycleConfiguration"
+   }
+  ],
+  "cloudtrail-enabled": [
+   {
+    "resource": "AWS::CloudTrail::Trail",
+    "require": {
+     "op": "exists"
+    }
+   }
+  ],
+  "multi-region-cloudtrail-enabled": [
+   {
+    "resource": "AWS::CloudTrail::Trail",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "IsMultiRegionTrail"
+   }
+  ],
+  "cloud-trail-log-file-validation-enabled": [
+   {
+    "resource": "AWS::CloudTrail::Trail",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "EnableLogFileValidation"
+   }
+  ],
+  "cloud-trail-encryption-enabled": [
+   {
+    "resource": "AWS::CloudTrail::Trail",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "KMSKeyId"
+   }
+  ],
+  "cloud-trail-cloud-watch-logs-enabled": [
+   {
+    "resource": "AWS::CloudTrail::Trail",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "CloudWatchLogsLogGroupArn"
+   }
+  ],
+  "cloudtrail-s3-dataevents-enabled": [
+   {
+    "resource": "AWS::CloudTrail::Trail",
+    "require": {
+     "op": "contains",
+     "value": "AWS::S3::Object"
+    },
+    "attribute": "AdvancedEventSelectors.FieldSelectors.Equals"
+   }
+  ],
+  "cloudwatch-log-group-encrypted": [
+   {
+    "resource": "AWS::Logs::LogGroup",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "KmsKeyId"
+   }
+  ],
+  "cw-loggroup-retention-period-check": [
+   {
+    "resource": "AWS::Logs::LogGroup",
+    "require": {
+     "op": "min"
+    },
+    "attribute": "RetentionInDays",
+    "value_from": "logging.retention_days"
+   }
+  ],
+  "cmk-backing-key-rotation-enabled": [
+   {
+    "resource": "AWS::KMS::Key",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "EnableKeyRotation"
+   }
+  ],
+  "kms-cmk-not-scheduled-for-deletion": [
+   {
+    "resource": "AWS::KMS::Key",
+    "require": {
+     "op": "exists"
+    }
+   }
+  ],
+  "dynamodb-table-encrypted-kms": [
+   {
+    "resource": "AWS::DynamoDB::Table",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "SSESpecification.SSEEnabled"
+   }
+  ],
+  "dynamodb-pitr-enabled": [
+   {
+    "resource": "AWS::DynamoDB::Table",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PointInTimeRecoverySpecification.PointInTimeRecoveryEnabled"
+   }
+  ],
+  "ecr-private-image-scanning-enabled": [
+   {
+    "resource": "AWS::ECR::Repository",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "ImageScanningConfiguration.ScanOnPush"
+   }
+  ],
+  "ecr-private-lifecycle-policy-configured": [
+   {
+    "resource": "AWS::ECR::Repository",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "LifecyclePolicy"
+   }
+  ],
+  "rds-storage-encrypted": [
+   {
+    "resource": "AWS::RDS::DBCluster",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "StorageEncrypted"
+   }
+  ],
+  "rds-snapshot-encrypted": [
+   {
+    "resource": "AWS::RDS::DBCluster",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "KmsKeyId"
+   }
+  ],
+  "rds-cluster-deletion-protection-enabled": [
+   {
+    "resource": "AWS::RDS::DBCluster",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "DeletionProtection"
+   }
+  ],
+  "rds-instance-deletion-protection-enabled": [
+   {
+    "resource": "AWS::RDS::DBCluster",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "DeletionProtection"
+   }
+  ],
+  "rds-logging-enabled": [
+   {
+    "resource": "AWS::RDS::DBCluster",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "EnableCloudwatchLogsExports"
+   }
+  ],
+  "db-instance-backup-enabled": [
+   {
+    "resource": "AWS::RDS::DBCluster",
+    "require": {
+     "op": "min",
+     "value": 1
+    },
+    "attribute": "BackupRetentionPeriod"
+   }
+  ],
+  "rds-instance-default-admin-check": [
+   {
+    "resource": "AWS::RDS::DBCluster",
+    "require": {
+     "op": "not_equals",
+     "value": "postgres"
+    },
+    "attribute": "MasterUsername"
+   }
+  ],
+  "rds-instance-public-access-check": [
+   {
+    "resource": "AWS::RDS::DBInstance",
+    "require": {
+     "op": "equals",
+     "value": false
+    },
+    "attribute": "PubliclyAccessible"
+   }
+  ],
+  "rds-enhanced-monitoring-enabled": [
+   {
+    "resource": "AWS::RDS::DBInstance",
+    "require": {
+     "op": "min",
+     "value": 1
+    },
+    "attribute": "MonitoringInterval"
+   }
+  ],
+  "rds-automatic-minor-version-upgrade-enabled": [
+   {
+    "resource": "AWS::RDS::DBInstance",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "AutoMinorVersionUpgrade"
+   }
+  ],
+  "rds-cluster-multi-az-enabled": [
+   {
+    "resource": "AWS::RDS::DBInstance",
+    "require": {
+     "op": "count_min",
+     "value": 2
+    },
+    "subject": "AWS::RDS::DBCluster",
+    "link": [
+     "DBClusterIdentifier",
+     "__ref__"
+    ]
+   }
+  ],
+  "rds-multi-az-support": [
+   {
+    "resource": "AWS::RDS::DBInstance",
+    "require": {
+     "op": "count_min",
+     "value": 2
+    },
+    "subject": "AWS::RDS::DBCluster",
+    "link": [
+     "DBClusterIdentifier",
+     "__ref__"
+    ]
+   }
+  ],
+  "backup-recovery-point-encrypted": [
+   {
+    "resource": "AWS::Backup::BackupVault",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "EncryptionKeyArn"
+   }
+  ],
+  "backup-recovery-point-manual-deletion-disabled": [
+   {
+    "resource": "AWS::Backup::BackupVault",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "LockConfiguration"
+   },
+   {
+    "resource": "AWS::Backup::BackupVault",
+    "require": {
+     "op": "contains",
+     "value": "backup:DeleteRecoveryPoint"
+    },
+    "attribute": "AccessPolicy"
+   }
+  ],
+  "backup-plan-min-frequency-and-min-retention-check": [
+   {
+    "resource": "AWS::Backup::BackupPlan",
+    "require": {
+     "op": "min"
+    },
+    "attribute": "BackupPlan.BackupPlanRule.Lifecycle.DeleteAfterDays",
+    "value_param": "requiredRetentionDays"
+   }
+  ],
+  "backup-recovery-point-minimum-retention-check": [
+   {
+    "resource": "AWS::Backup::BackupPlan",
+    "require": {
+     "op": "min"
+    },
+    "attribute": "BackupPlan.BackupPlanRule.Lifecycle.DeleteAfterDays",
+    "value_param": "requiredRetentionDays"
+   }
+  ],
+  "guardduty-enabled-centralized": [
+   {
+    "resource": "AWS::GuardDuty::Detector",
+    "attribute": "Enable",
+    "require": {
+     "op": "equals",
+     "value": true
+    }
+   }
+  ],
+  "securityhub-enabled": [
+   {
+    "resource": "AWS::SecurityHub::Hub",
+    "require": {
+     "op": "exists"
+    }
+   }
+  ],
+  "vpc-flow-logs-enabled": [
+   {
+    "resource": "AWS::EC2::FlowLog",
+    "attribute": "TrafficType",
+    "require": {
+     "op": "set"
+    },
+    "subject": "AWS::EC2::VPCEndpoint"
+   }
+  ],
+  "ec2-ebs-encryption-by-default": [
+   {
+    "resource": "Custom::SgeaEbsEncryptionByDefault",
+    "require": {
+     "op": "exists"
+    }
+   },
+   {
+    "resource": "Custom::SgeaEbsDefaultKmsKey",
+    "require": {
+     "op": "exists"
+    }
+   }
+  ],
+  "ebs-snapshot-public-restorable-check": [
+   {
+    "resource": "Custom::SgeaSnapshotBlockPublicAccess",
+    "require": {
+     "op": "contains",
+     "value": "block-all-sharing"
+    },
+    "attribute": "Create"
+   }
+  ],
+  "s3-account-level-public-access-blocks-periodic": [
+   {
+    "resource": "Custom::SgeaS3AccountPublicAccessBlock",
+    "require": {
+     "op": "contains",
+     "value": "RestrictPublicBuckets"
+    },
+    "attribute": "Create"
+   }
+  ],
+  "vpc-default-security-group-closed": [
+   {
+    "resource": "Custom::SgeaDefaultSecurityGroupClosed",
+    "require": {
+     "op": "count_min",
+     "value": 2
+    }
+   }
+  ],
+  "iam-password-policy": [
+   {
+    "resource": "Custom::SgeaPasswordPolicy",
+    "require": {
+     "op": "contains",
+     "value": "MinimumPasswordLength"
+    },
+    "attribute": "Create"
+   }
+  ],
+  "iam-password-policy-2": [
+   {
+    "resource": "Custom::SgeaPasswordPolicy",
+    "require": {
+     "op": "exists"
+    }
+   }
+  ],
+  "iam-no-inline-policy-check": [
+   {
+    "resource": "AWS::IAM::Policy",
+    "require": {
+     "op": "absent"
+    }
+   },
+   {
+    "resource": "AWS::IAM::Role",
+    "require": {
+     "op": "empty"
+    },
+    "attribute": "Policies"
+   }
+  ],
+  "iam-policy-no-statements-with-admin-access": [
+   {
+    "resource": "AWS::IAM::ManagedPolicy",
+    "require": {
+     "op": "iam_no_admin"
+    },
+    "attribute": "PolicyDocument"
+   }
+  ],
+  "iam-policy-no-statements-with-full-access": [
+   {
+    "resource": "AWS::IAM::ManagedPolicy",
+    "require": {
+     "op": "iam_no_full_access"
+    },
+    "attribute": "PolicyDocument"
+   }
+  ],
+  "iam-customer-policy-blocked-kms-actions": [
+   {
+    "resource": "AWS::IAM::ManagedPolicy",
+    "require": {
+     "op": "iam_no_blocked_kms"
+    },
+    "attribute": "PolicyDocument",
+    "value_param": "blockedActionsPatterns"
+   }
+  ],
+  "iam-inline-policy-blocked-kms-actions": [
+   {
+    "resource": "AWS::IAM::Policy",
+    "require": {
+     "op": "iam_no_blocked_kms"
+    },
+    "attribute": "PolicyDocument",
+    "value_param": "blockedActionsPatterns"
+   }
+  ],
+  "aurora-resources-protected-by-backup-plan": [
+   {
+    "resource": "AWS::Backup::BackupSelection",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "BackupSelection.Resources",
+    "subject": "AWS::RDS::DBCluster"
+   }
+  ],
+  "rds-in-backup-plan": [
+   {
+    "resource": "AWS::Backup::BackupSelection",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "BackupSelection.Resources",
+    "subject": "AWS::RDS::DBCluster"
+   }
+  ],
+  "rds-resources-protected-by-backup-plan": [
+   {
+    "resource": "AWS::Backup::BackupSelection",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "BackupSelection.Resources",
+    "subject": "AWS::RDS::DBCluster"
+   }
+  ],
+  "dynamodb-in-backup-plan": [
+   {
+    "resource": "AWS::Backup::BackupSelection",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "BackupSelection.Resources",
+    "subject": "AWS::DynamoDB::Table"
+   }
+  ],
+  "dynamodb-resources-protected-by-backup-plan": [
+   {
+    "resource": "AWS::Backup::BackupSelection",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "BackupSelection.Resources",
+    "subject": "AWS::DynamoDB::Table"
+   }
+  ],
+  "dynamodb-autoscaling-enabled": [
+   {
+    "resource": "AWS::DynamoDB::Table",
+    "require": {
+     "op": "equals",
+     "value": "PAY_PER_REQUEST"
+    },
+    "attribute": "BillingMode"
+   }
+  ],
+  "s3-resources-protected-by-backup-plan": [
+   {
+    "resource": "AWS::Backup::BackupSelection",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "BackupSelection.Resources",
+    "subject": "AWS::S3::Bucket",
+    "exempt": {
+     "sgea:role": [
+      "access-log-sink",
+      "replica"
+     ]
+    }
+   }
+  ],
+  "lambda-concurrency-check": [
+   {
+    "resource": "AWS::Lambda::Function",
+    "require": {
+     "op": "min"
+    },
+    "attribute": "ReservedConcurrentExecutions",
+    "value_param": "ConcurrencyLimitLow",
+    "exempt": {
+     "sgea:role": [
+      "deploy-helper"
+     ]
+    }
+   },
+   {
+    "resource": "AWS::Lambda::Function",
+    "require": {
+     "op": "max"
+    },
+    "attribute": "ReservedConcurrentExecutions",
+    "value_param": "ConcurrencyLimitHigh",
+    "exempt": {
+     "sgea:role": [
+      "deploy-helper"
+     ]
+    }
+   }
+  ],
+  "lambda-inside-vpc": [
+   {
+    "resource": "AWS::Lambda::Function",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "VpcConfig.SubnetIds",
+    "exempt": {
+     "sgea:role": [
+      "deploy-helper"
+     ]
+    }
+   }
+  ],
+  "lambda-dlq-check": [
+   {
+    "resource": "AWS::Lambda::Function",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "DeadLetterConfig.TargetArn",
+    "exempt": {
+     "sgea:role": [
+      "deploy-helper"
+     ]
+    }
+   }
+  ],
+  "lambda-function-public-access-prohibited": [
+   {
+    "resource": "AWS::Lambda::Permission",
+    "require": {
+     "op": "not_equals",
+     "value": "*"
+    },
+    "attribute": "Principal"
+   }
+  ],
+  "cloudwatch-alarm-action-check": [
+   {
+    "resource": "AWS::CloudWatch::Alarm",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "AlarmActions"
+   },
+   {
+    "resource": "AWS::CloudWatch::Alarm",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "InsufficientDataActions",
+    "when_param": "insufficientDataActionRequired"
+   },
+   {
+    "resource": "AWS::CloudWatch::Alarm",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "OKActions",
+    "when_param": "okActionRequired"
+   }
+  ],
+  "sns-encrypted-kms": [
+   {
+    "resource": "AWS::SNS::Topic",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "KmsMasterKeyId"
+   }
+  ],
+  "secretsmanager-using-cmk": [
+   {
+    "resource": "AWS::RDS::DBCluster",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "MasterUserSecret.KmsKeyId"
+   }
+  ],
+  "secretsmanager-rotation-enabled-check": [
+   {
+    "resource": "AWS::RDS::DBCluster",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "ManageMasterUserPassword"
+   }
+  ],
+  "cloudtrail-security-trail-enabled": [
+   {
+    "resource": "AWS::CloudTrail::Trail",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "IsMultiRegionTrail"
+   },
+   {
+    "resource": "AWS::CloudTrail::Trail",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "EnableLogFileValidation"
+   },
+   {
+    "resource": "AWS::CloudTrail::Trail",
+    "require": {
+     "op": "set"
+    },
+    "attribute": "KMSKeyId"
+   },
+   {
+    "resource": "AWS::CloudTrail::Trail",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "IncludeGlobalServiceEvents"
+   }
+  ],
+  "cloudtrail-s3-bucket-public-access-prohibited": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.BlockPublicAcls"
+   },
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.BlockPublicPolicy"
+   },
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.IgnorePublicAcls"
+   },
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.RestrictPublicBuckets"
+   }
+  ],
+  "s3-bucket-public-read-prohibited": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.BlockPublicAcls"
+   },
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.BlockPublicPolicy"
+   },
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.IgnorePublicAcls"
+   },
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.RestrictPublicBuckets"
+   }
+  ],
+  "s3-bucket-public-write-prohibited": [
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.BlockPublicAcls"
+   },
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.BlockPublicPolicy"
+   },
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.IgnorePublicAcls"
+   },
+   {
+    "resource": "AWS::S3::Bucket",
+    "require": {
+     "op": "equals",
+     "value": true
+    },
+    "attribute": "PublicAccessBlockConfiguration.RestrictPublicBuckets"
+   }
+  ],
+  "inspector-ecr-scan-enabled": [
+   {
+    "resource": "Custom::SgeaInspector",
+    "require": {
+     "op": "contains",
+     "value": "ECR"
+    },
+    "attribute": "Create"
+   }
+  ],
+  "inspector-lambda-standard-scan-enabled": [
+   {
+    "resource": "Custom::SgeaInspector",
+    "require": {
+     "op": "contains",
+     "value": "LAMBDA"
+    },
+    "attribute": "Create"
+   }
+  ],
+  "inspector-ec2-scan-enabled": [
+   {
+    "resource": "Custom::SgeaInspector",
+    "require": {
+     "op": "contains",
+     "value": "EC2"
+    },
+    "attribute": "Create"
+   }
+  ]
+ }
+}

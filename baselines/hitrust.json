@@ -1,0 +1,15 @@
+{
+  "_baseline": "hitrust",
+  "_doc": "HITRUST CSF overlay. Composed ON TOP of a FedRAMP baseline (and normally the HIPAA overlay too, since HITRUST CSF harmonizes HIPAA with other authorities). It does not change partition/region. It adds the HITRUST CSF control catalog and keeps the PHI-tightened guardrail/service posture from the HIPAA overlay. HITRUST is a certification framework: the CSF control mappings and the certification evidence are the toolkit's starting mapping and require assessor/ISSO review.",
+  "guardrails": {
+    "pii": { "mode": "block", "action": "BLOCK", "phi_entities": true, "contextual_action": "ANONYMIZE" }
+  },
+  "services": {
+    "hipaa_eligible_only": true
+  },
+  "evidence": {
+    "control_catalogs": ["hitrust-csf-v11"], "conformance_packs": ["NIST-800-53-rev-5"],
+    "crm_profile": "hitrust",
+    "conmon": true
+  }
+}

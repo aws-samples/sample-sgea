@@ -1,0 +1,15 @@
+{
+  "_baseline": "hipaa",
+  "_doc": "HIPAA Security Rule overlay. Composed ON TOP of a FedRAMP baseline. Does not change partition/region; it tightens PII to PHI, restricts the service surface to HIPAA-eligible-only, and adds the HIPAA control catalogs. Labels in the HIPAA CRM are the agent's mapping and require ISSO review.",
+  "guardrails": {
+    "pii": { "mode": "block", "action": "BLOCK", "phi_entities": true, "contextual_action": "ANONYMIZE" }
+  },
+  "services": {
+    "hipaa_eligible_only": true
+  },
+  "evidence": {
+    "control_catalogs": ["hipaa-security-rule", "nist-800-66-rev2"], "conformance_packs": ["HIPAA-Security"],
+    "crm_profile": "hipaa",
+    "conmon": true
+  }
+}

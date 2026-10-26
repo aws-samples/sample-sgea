@@ -1,0 +1,15 @@
+{
+  "_baseline": "fda-21-cfr-part-11",
+  "_doc": "FDA 21 CFR Part 11 / GxP overlay for electronic records and electronic signatures in regulated (clinical / GxP) research. Composed ON TOP of a FedRAMP baseline; does not change partition/region. It lengthens audit-record retention and asserts the Part 11 control catalog. Part 11's core demands — immutable audit trails, electronic-signature binding, and computer system validation (CSV) — are partly platform controls and partly process/SOP controls documented in the vertical; the toolkit configures the platform side and flags the rest for the quality/validation team.",
+  "logging": {
+    "retention_days": 2555,
+    "model_invocation_logging": true,
+    "tenant_log_split": true,
+    "most_sensitive_store": true
+  },
+  "evidence": {
+    "control_catalogs": ["fda-21-cfr-part-11"], "conformance_packs": ["FDA-21CFR-Part-11"],
+    "crm_profile": "fda-21-cfr-part-11",
+    "conmon": true
+  }
+}
