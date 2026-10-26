@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 """
 Tests for the derived values, SCP/RCP policy library, both emitters and `sgea check`.
 
@@ -737,3 +739,18 @@ def test_cost_estimate_counts_the_emitted_endpoints():
     n = len(endpoint_services(r))
     assert lines["Interface VPC endpoints (%d services x 2 AZs)" % n] == n * 2 * manual_steps.VPCE_HOUR * manual_steps.HOURS_PER_MONTH
     assert "## Running cost estimate (enclave only)" in manual_steps.render(r, ROOT, ["terraform"])
+
+
+def test_mit0_headers_on_sources_and_generated_iac():
+    sys.path.insert(0, os.path.join(ROOT, "tools"))
+    import license_headers
+    try:
+        files = license_headers.tracked_sources()
+    except Exception:   # not a git checkout
+        files = []
+    missing = [f for f in files if not license_headers.has_header(open(os.path.join(ROOT, f)).read())]
+    assert not missing, missing
+    out = tempfile.mkdtemp(prefix="sgea-hdr-")
+    sgea.main(["export", "--profile", os.path.join(PROFILES, "fedramp-moderate-hipaa.commercial.json"), "--out", out])
+    gen = [os.path.join(d, f) for d, _, fs in os.walk(out) for f in fs if f.endswith((".tf", ".ts", ".py"))]
+    assert gen and all(license_headers.has_header(open(p).read()) for p in gen), [p for p in gen if not license_headers.has_header(open(p).read())][:5]

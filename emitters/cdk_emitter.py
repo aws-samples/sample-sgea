@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 """
 SGEA CDK emitter — wrapper-seam design (ADR 0001).
 
@@ -17,8 +19,10 @@ import json, os, shutil
 
 try:
     from .derived import derive, pack_template
+    from .license_header import with_header
 except ImportError:  # in-repo fallback import (sgea._load_emitters)
     from derived import derive, pack_template
+    from license_header import with_header
 
 APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cdk_app")
 
@@ -26,7 +30,7 @@ APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cdk_app")
 def _w(path, content):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
-        f.write(content)
+        f.write(with_header(path, content))   # MIT-0 header on generated .tf / .ts / .py / .sh
     return path
 
 

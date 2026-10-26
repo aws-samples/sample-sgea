@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 """
 SGEA sample tool — a Lambda target behind the enclave AgentCore Gateway.
 Tool `enclave_facts`: returns non-sensitive facts about the enclave the agent runs in.

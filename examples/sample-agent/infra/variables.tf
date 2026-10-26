@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 variable "enclave" {
   description = "Enclave facts: `terraform output -json enclave` from build/<profile-id>/terraform."
   type = object({

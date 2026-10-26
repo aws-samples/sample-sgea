@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 # SGEA token meter: credits the token-control ledger from Bedrock model-invocation logs.
 # Invoked by (a) the CloudWatch Logs subscription on the enclave invocation log group and
 # (b) a schedule that writes the meter heartbeat (the gateway interceptor fails closed when

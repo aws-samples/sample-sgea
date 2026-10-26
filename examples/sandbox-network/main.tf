@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 # SGEA sandbox network fixture — NOT part of the enclave.
 #
 # The enclave deliberately does not create its VPC (the customer's network team owns it).

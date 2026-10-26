@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — enclave-kms (mirrors modules/enclave-kms)
 // Official L2 kms.Key: rotation, 30-day deletion window, alias; key policy admits CloudWatch
 // Logs, CloudTrail and Bedrock invocation-log delivery for this account only.

@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — bedrock-guardrail (mirrors modules/bedrock-guardrail)
 // seam-kind: official-passthrough -> aws_bedrock.CfnGuardrail (+ version, account enforcement)
 // Props = SGEA resolved-config `guardrails` block; entity lists/tier come from config._derived.

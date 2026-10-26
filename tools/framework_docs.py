@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 """
 Write docs/frameworks/<baseline>.md (one per catalog baseline) and docs/frameworks/README.md (index) from
 catalog/<baseline>.json, profiles/*.json, baselines/*.json, sources/inferred/rule-dispositions.yaml,

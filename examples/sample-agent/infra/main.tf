@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 # SGEA sample tenant app: deploys onto an exported enclave.
 #
 #   - Cognito user pool + app client: a TEST identity provider issuing the JWT the enclave's

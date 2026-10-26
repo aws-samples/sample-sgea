@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — dod-scca (mirrors modules/dod-scca)
 // DoD SCCA in-account components: VDSS (AWS Network Firewall, default drop, egress allow-list)
 // and VDMS logging (firewall + VPC flow logs). BCAP, routing via the firewall endpoints, and

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 # Install a current boto3/botocore (with bedrock-agentcore-control) into a private directory that
 # tools/sandbox_teardown.py and tools/collect_evidence.py put first on sys.path when it exists, so an
 # older botocore elsewhere (e.g. user site-packages) cannot shadow it.

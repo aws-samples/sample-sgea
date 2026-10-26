@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA enclave alarms (mirrors the Terraform aws_cloudwatch_metric_alarm resources).
 import { Construct } from 'constructs';
 import { Duration, aws_cloudwatch as cloudwatch, aws_cloudwatch_actions as cw_actions, aws_lambda as lambda,

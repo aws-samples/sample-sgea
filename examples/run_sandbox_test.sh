@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 # SGEA sandbox end-to-end test: deploy the enclave + the sample agent into ONE sandbox account,
 # run the e2e test, leave everything up for inspection. Tear down with tools/sandbox_teardown.py.
 #

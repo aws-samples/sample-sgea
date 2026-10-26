@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA CDK app — customer-supplied environment inputs (NOT control decisions).
 // Control decisions come from config.json (resolved profile + `_derived`).
 // Mirrors the Terraform root variables; set with `cdk synth -c sgea:vpcId=vpc-...`

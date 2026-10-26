@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 """
 Tests for the sandbox tooling's credential handling (tools/sandbox_teardown.py, tools/sandbox_plan.py) and the
 syntax of the sandbox shell scripts.

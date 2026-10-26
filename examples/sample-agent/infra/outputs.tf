@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 output "runtime_arn" { value = module.runtime.agent_runtime_arn }
 output "user_pool_id" { value = aws_cognito_user_pool.test_idp.id }
 output "client_id" { value = aws_cognito_user_pool_client.agent.id }

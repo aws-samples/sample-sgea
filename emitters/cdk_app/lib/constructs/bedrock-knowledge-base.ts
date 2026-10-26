@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — bedrock-knowledge-base (mirrors modules/bedrock-knowledge-base)
 // seam-kind: official-passthrough -> aws_bedrock.CfnKnowledgeBase with RDS (Aurora PostgreSQL /
 // pgvector) storage: the enclave's Aurora-only vector-store decision, no OpenSearch / S3 Vectors.

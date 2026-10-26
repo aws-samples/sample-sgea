@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — agentcore-runtime (mirrors modules/agentcore-runtime)
 // seam-kind: official-passthrough -> aws_bedrockagentcore.CfnRuntime. VPC-only (no PUBLIC),
 // custom JWT inbound auth, idle session <= 900 s, account-scoped resource policy.

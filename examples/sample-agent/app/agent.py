@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 """
 SGEA sample agent — an AgentCore Runtime container deployed as a tenant of the enclave.
 

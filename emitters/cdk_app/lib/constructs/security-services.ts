@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — security-services (mirrors modules/security-services)
 // GuardDuty + Security Hub with the NIST SP 800-53 Rev5 standard (DoD SCCA VDMS; packs'
 // guardduty-enabled-centralized / securityhub-enabled). Disable with -c sgea:createSecurityServices=false

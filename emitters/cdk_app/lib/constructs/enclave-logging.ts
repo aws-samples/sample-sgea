@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — enclave-logging (mirrors modules/enclave-logging)
 // Official L2s: s3.Bucket (via HardenedBucket), logs.LogGroup, iam.Role, cloudtrail.Trail.
 // Bedrock model-invocation logging has no CloudFormation type: official AwsCustomResource SDK call.

@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA CDK aspects (applied to the whole app in bin/app.ts).
 //  * NoInlinePolicies — iam-no-inline-policy-check: CDK grants write inline AWS::IAM::Policy resources
 //    (DefaultPolicy, custom-resource policies). Each is re-emitted as an AWS::IAM::ManagedPolicy with the

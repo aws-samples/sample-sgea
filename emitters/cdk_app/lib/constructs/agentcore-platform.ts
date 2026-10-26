@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — agentcore-platform (mirrors modules/agentcore-platform)
 // AgentCore Gateway / Memory / PolicyEngine: official L1 (the L2 is experimental alpha — ADR 0001).
 // ECR, Lambda, IAM: official L2. Token-vault CMK has no CloudFormation type: AwsCustomResource.

@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 """
 SGEA Terraform emitter — wrapper-seam design (ADR 0001).
 
@@ -27,6 +29,7 @@ for. Each wrapper README says so.
 import json, os, shutil, subprocess
 
 try:
+    from .license_header import with_header
     from .guardrail_map import PII_ENTITIES, PHI_ENTITIES, CONTEXTUAL_ENTITIES, INPUT_ONLY_FILTERS, FILTER_ORDER
     from . import policy_library
     from .derived import (cw_retention, data_event_types, endpoint_services, backup_policy,
@@ -34,6 +37,7 @@ try:
                           authorized_model_ids, scca_required, account_baseline, pack_template,
                           log_retention_days)
 except ImportError:  # in-repo fallback import (sgea._load_emitters)
+    from license_header import with_header
     from guardrail_map import PII_ENTITIES, PHI_ENTITIES, CONTEXTUAL_ENTITIES, INPUT_ONLY_FILTERS, FILTER_ORDER
     import policy_library
     from derived import (cw_retention, data_event_types, endpoint_services, backup_policy,
@@ -48,7 +52,7 @@ SEAM_RAW = "raw-governance-adapter"
 def _w(path, content):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
-        f.write(content)
+        f.write(with_header(path, content))   # MIT-0 header on generated .tf / .ts / .py / .sh
     return path
 
 

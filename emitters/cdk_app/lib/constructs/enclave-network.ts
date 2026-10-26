@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — enclave-network (mirrors modules/enclave-network)
 // SGEA-BR-09: interface endpoints (private DNS) for the services the profile allows.
 // Like the Terraform module, each endpoint only gets the subnets in AZs its service supports

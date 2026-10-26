@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 # Build the sample agent (linux/arm64 — AgentCore Runtime) and push it to the ENCLAVE's ECR
 # repository with an immutable, content-derived tag. Prints the image URI.
 #   usage: build_push.sh <agents_repository_url> <region>

@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — account-baseline (mirrors modules/account-baseline)
 // Account settings the composed packs evaluate. None has a CloudFormation type, so each is an official
 // AwsCustomResource SDK call (settings are left in place on stack delete: they are account guardrails).

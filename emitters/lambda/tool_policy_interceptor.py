@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 # SGEA AgentCore Gateway REQUEST interceptor. Two enclave controls, each enabled by env:
 #  * tool-path policy (TOOL_POLICY_ENFORCE=true; stands in for the AgentCore policy engine where
 #    AWS does not offer it, e.g. GovCloud). Only tools/call is evaluated; deny overrides allow;

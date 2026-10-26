@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA deploy helper — waits for IAM propagation (mirrors Terraform's time_sleep.iam_propagation).
 // CloudFormation creates a resource the moment its role policy reports complete, but services that
 // check the role at create time (AgentCore Gateway: GetPolicyEngine; AWS Config: a freshly created

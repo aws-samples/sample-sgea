@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA hardened S3 bucket (mirrors modules/enclave-logging/bucket): official L2 s3.Bucket for
 // every enclave log bucket — versioning, SSE-KMS, block public access, ACLs disabled,
 // enforceSSL, optional Object Lock, lifecycle, server access logging (L2 grants delivery).

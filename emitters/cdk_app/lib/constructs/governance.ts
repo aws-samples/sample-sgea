@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — governance (mirrors modules/org-guardrail + token-control)
 // seam-kind: raw-governance-adapter. SCP/RCP statements are the SGEA policy library,
 // rendered from the resolved config and bundled into config._derived.policy_bundles; deploy-time

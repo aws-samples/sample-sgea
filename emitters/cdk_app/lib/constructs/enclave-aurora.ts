@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — enclave-aurora (mirrors modules/enclave-aurora)
 // Official L2 rds.DatabaseCluster (Aurora PostgreSQL Serverless v2), configured from the composed packs'
 // rds-* rules; AWS Backup lives in enclave-backup. Network objects are imported from customer-supplied ids.

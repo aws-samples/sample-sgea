@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — config-conformance (mirrors modules/config-conformance)
 // One AWS-published conformance pack per composed baseline; templates pinned in
 // sources/conformance-packs and copied to ./packs at export.

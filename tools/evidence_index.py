@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 """
 Write docs/evidence/README.md — the customer evidence-pack index — from the collected reports
 (docs/evidence/*.json), sources/inferred/known-findings.yaml and the documented exceptions in

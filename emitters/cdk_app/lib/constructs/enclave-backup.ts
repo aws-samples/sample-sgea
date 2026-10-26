@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 // SGEA WRAPPER CONSTRUCT (seam) — enclave-backup (mirrors modules/enclave-backup)
 // AWS Backup vault (enclave CMK, optional vault lock), daily plan with the pack-derived retention, and
 // one selection covering every enclave data store: aurora-/rds-*-backup-plan, dynamodb-*-backup-plan
