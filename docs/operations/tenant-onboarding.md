@@ -132,19 +132,18 @@ The SCP / RCP layer (packs bundled into the `sgea-scp-N` / `sgea-rcp-N` policies
     - Never log prompts, answers or tokens; log outcomes (the sample's `findings()` records filter types only).
 11. **Tags.** Tag every tenant resource and role `sgea:tenant = <tenant>` (sample: provider `default_tags`, also
     `sgea:profile = <profile-id>`). The tenant-isolation SCP only applies where both principal and resource carry the
-    tag; untagged resources are not protected by it.
+    tag; untagged resources are not protected by it. Also tag each runtime execution role `sgea:team = <team>`, the one team its users belong to (TR-26): the token breaker only acts on roles tagged with the exhausted team.
 12. **Validate** in non-production with the e2e checks adapted to your agent (`scripts/e2e_test.py`):
     authenticated call answered through the guardrail, tool call allowed by the tool policy, PII prompt blocked,
-    contextual PII masked, usage credited to the ledger, over-budget tool calls denied, unauthenticated call
-    rejected (401 / 403).
+    contextual PII masked, usage credited to the ledger, over-budget tool calls denied, over-budget team's model calls
+    denied and then released, unauthenticated call rejected (401 / 403).
 
 ## 4. Token budgets
 
 Budgets are **enclave-wide** values in the profile's `token_control` (`per_user_daily_tokens`,
 `per_team_monthly_tokens`, `default_timezone`, `fail_closed_hours`, `team_claim`); a tenant is "assigned" a budget
 by its users' team claim, not by a per-tenant setting. Ledger items: `pk=user#<sub>` / `sk=day#YYYY-MM-DD` and
-`pk=team#<team>` / `sk=month#YYYY-MM`, attribute `tokens`. Only the **gateway tool path** is enforced: direct model
-calls are metered but not blocked. When the meter heartbeat (`pk=meter`, `sk=heartbeat`) is older than
+`pk=team#<team>` / `sk=month#YYYY-MM`, attribute `tokens`. The per-user daily budget is enforced on the **gateway tool path**. The per-team monthly budget is enforced on the tool path and, through the token breaker (ADR 0003, `token_control.model_enforce`, default on), on model calls: once a team reaches its budget, the breaker attaches `sgea-<env>-token-budget-exhausted` to its `sgea:team`-tagged runtime roles and their Bedrock `InvokeModel*` / `RetrieveAndGenerate*` calls are denied until month rollover or a raised budget. Enforcement follows the invocation logs by a few minutes, so a burst can overshoot the budget slightly. A role shared by several teams cannot carry one `sgea:team` value and is bounded only on the tool path. When the meter heartbeat (`pk=meter`, `sk=heartbeat`) is older than
 `fail_closed_hours`, or the ledger is unreadable, every tool call is denied. Changing a budget is a profile change
 ([change and upgrade](change-and-upgrade.md)).
 
@@ -184,7 +183,7 @@ review.
 | 11 | Runtime via the `agentcore-runtime` wrapper; `allowed_source_vpce_ids` set | Plan | [ ] |
 | 12 | Runtime log group KMS + retention applied | `describe-log-groups` | [ ] |
 | 13 | Agent attaches the guardrail, uses `guardContent`, passes `sgea_user` / `sgea_team` | Code review | [ ] |
-| 14 | All resources and roles tagged `sgea:tenant` (and `sgea:profile`) | Tag report | [ ] |
+| 14 | All resources and roles tagged `sgea:tenant` (and `sgea:profile`); runtime roles also `sgea:team` (one team per role) | Tag report | [ ] |
 | 15 | No prompts / tokens / answers in logs | Code review | [ ] |
 | 16 | e2e checks pass in non-production | Test output | [ ] |
 | 17 | Conformance packs show no new NON_COMPLIANT tenant resources beyond accepted deviations | Pack results | [ ] |

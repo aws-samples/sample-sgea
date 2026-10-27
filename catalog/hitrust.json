@@ -1,7 +1,7 @@
 {
   "baseline": "hitrust",
   "distribution_note": "Public distribution: AWS Artifact-derived fields removed.",
-  "generated_at": "2026-10-23T14:20:51.281990+00:00",
+  "generated_at": "2026-10-27T13:20:27.242507+00:00",
   "conformance_packs_commit": "3c4879c18c68ba59f0eb74c588a5c62325675ee4",
   "sources": [
     {
@@ -7086,6 +7086,32 @@
           "controls_from_topic": {
             "NIST 800-53 Rev5": [
               "AU-11"
+            ]
+          },
+          "controls_from_analog_rule": [],
+          "analog_rule_in_baseline_pack": null
+        },
+        {
+          "id": "SGEA-TC-03",
+          "resource": "aws_sfn_state_machine",
+          "attribute": "role_arn",
+          "require": {
+            "op": "set"
+          },
+          "level": "required",
+          "rationale": "The per-team monthly token budget also bounds model calls, not only gateway tool calls. Once a team reaches its budget, the SGEA token breaker (ADR 0003) attaches the enclave deny policy sgea-<env>-token-budget-exhausted to that team's runtime roles (tagged sgea:team) and detaches it at month rollover or when the budget is raised. It acts only on the token ledger's trip records.",
+          "topic": "Network Access and Resource/Attribute-Based Access Policies",
+          "applies_when": "token_control.enabled && logging.model_invocation_logging && token_control.per_team_monthly_tokens && token_control.model_enforce != False",
+          "cfn": {
+            "type": "AWS::StepFunctions::StateMachine",
+            "attribute": "RoleArn"
+          },
+          "provenance": "inferred",
+          "controls_from_topic": {
+            "NIST 800-53 Rev5": [
+              "AC-2",
+              "AC-6",
+              "IA-2"
             ]
           },
           "controls_from_analog_rule": [],

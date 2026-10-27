@@ -31,7 +31,8 @@ EXTRA = {"aws_ecr_repository", "aws_cloudwatch_log_group", "aws_vpc_endpoint", "
          "aws_ebs_encryption_by_default", "aws_ebs_default_kms_key", "aws_ebs_snapshot_block_public_access",
          "aws_s3_account_public_access_block", "aws_default_security_group", "aws_iam_account_password_policy",
          "aws_iam_role_policy", "aws_iam_user_policy", "aws_iam_group_policy", "aws_iam_policy", "aws_backup_selection",
-         "aws_lambda_permission", "aws_cloudwatch_metric_alarm", "aws_sns_topic", "aws_inspector2_enabler", "aws_backup_vault_policy"}
+         "aws_lambda_permission", "aws_cloudwatch_metric_alarm", "aws_sns_topic", "aws_inspector2_enabler", "aws_backup_vault_policy",
+         "aws_sfn_state_machine"}
 
 
 def main(schema_path, lock_path):

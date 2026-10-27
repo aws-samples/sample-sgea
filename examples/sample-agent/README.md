@@ -19,7 +19,7 @@ user ──JWT (test Cognito IdP)──▶ AgentCore Runtime (VPC-only, SGEA age
 | `tool/` | `enclave_facts` Lambda, registered as an AgentCore Gateway Lambda target |
 | `infra/` | Tenant Terraform: test IdP, tool (terraform-aws-modules/lambda), gateway target, least-privilege execution role, runtime via `./.sgea-modules/agentcore-runtime` (symlink to the enclave build), encrypted runtime log group |
 | `scripts/build_push.sh` | finch build (linux/arm64) + push to the enclave ECR, content-derived immutable tag |
-| `scripts/e2e_test.py` | 7 checks: authenticated call answers · gateway tool called (allowed by the tool policy) · PII prompt blocked by the guardrail · contextual PII masked, not blocked · token meter credits the caller · over-budget caller's tool calls denied · unauthenticated call rejected |
+| `scripts/e2e_test.py` | 9 checks: authenticated call answers · gateway tool called (allowed by the tool policy) · PII prompt blocked by the guardrail · contextual PII masked, not blocked · token meter credits the caller · over-budget caller's tool calls denied · over-budget team's model calls denied by the token breaker (ADR 0003; the runtime role is tagged `sgea:team`) · breaker released once back under budget · unauthenticated call rejected |
 
 `infra/` refuses (`check` block) a `model_id` whose foundation model is not on the enclave's authorized list.
 Default: `us.anthropic.claude-haiku-4-5-20251001-v1:0` (FedRAMP Moderate–authorized). In a fresh account,

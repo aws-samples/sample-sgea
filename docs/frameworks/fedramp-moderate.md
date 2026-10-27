@@ -70,7 +70,7 @@ SGEA's own Bedrock / AgentCore controls (`sources/inferred/service-controls.yaml
 
 | Service | SGEA controls | Conditional |
 |---|---:|---:|
-| bedrock | 11 | 6 |
+| bedrock | 12 | 7 |
 | bedrock-agentcore | 27 | 3 |
 | dod-scca | 5 | 5 |
 
@@ -141,8 +141,8 @@ Sandbox deployments of profiles composing this baseline, with the as-deployed co
 | dod-il2-commercial | Terraform | 2026-10-16 08:39 UTC | 152 | 78 | 77 |
 | fedramp-moderate-hipaa-commercial | CDK | 2026-10-16 15:29 UTC | 159 | 80 | 79 |
 | fedramp-moderate-hipaa-commercial | Terraform | 2026-10-16 03:35 UTC | 152 | 79 | 77 |
-| fedramp-moderate-hipaa-hitrust-commercial | CDK | 2026-10-27 03:18 UTC | 197 | 101 | 99 |
-| fedramp-moderate-hipaa-hitrust-commercial | Terraform | 2026-10-27 02:20 UTC | 178 | 98 | 96 |
+| fedramp-moderate-hipaa-hitrust-commercial | CDK | 2026-10-27 14:44 UTC | 186 | 103 | 100 |
+| fedramp-moderate-hipaa-hitrust-commercial | Terraform | 2026-10-27 15:43 UTC | 183 | 99 | 97 |
 | fedramp-moderate-part11-commercial | CDK | 2026-10-16 22:06 UTC | 159 | 80 | 79 |
 | fedramp-moderate-part11-commercial | Terraform | 2026-10-16 19:19 UTC | 203 | 79 | 77 |
 

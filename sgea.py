@@ -175,6 +175,12 @@ def validate(resolved, profile_dir=None):
         errs.append("GovCloud partition requires inference_profile_geo = 'us-gov'")
     if resolved.get("partition") == "aws" and geo == "us-gov":
         errs.append("commercial partition cannot use inference_profile_geo = 'us-gov'")
+    tc = resolved.get("token_control", {})
+    missing = [s for s in ("eventbridge", "stepfunctions") if s not in resolved.get("services", {}).get("allow", [])]
+    if (tc.get("enabled") and tc.get("model_enforce", True) and tc.get("per_team_monthly_tokens")
+            and resolved.get("logging", {}).get("model_invocation_logging") and missing):
+        errs.append("token_control.model_enforce (ADR 0003) needs services.allow to include " + ", ".join(missing)
+                    + "; add them or set token_control.model_enforce = false")
     if profile_dir is None:
         try:
             _, _, profile_dir = _dirs()

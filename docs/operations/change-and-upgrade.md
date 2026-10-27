@@ -91,6 +91,15 @@ The export now contains the `enclave-monitoring` module / `EnclaveMonitoring` co
 3. **Access Analyzer and Cost Anomaly Detection.** If the landing zone runs an organization analyzer and you do not want an account analyzer as well, set `create_access_analyzer` to false. Cost Anomaly Detection is opt-in because an account allows only one per-service monitor and AWS often creates a default one.
 4. **Subscriptions and noise.** Subscribe the security team to `sgea-<env>-security-alarms` (`MANUAL-STEPS.md`, after the first deploy), and tell them the first apply raises `sgea-<env>-ct-*` alarms for the IAM, bucket and Config changes it makes.
 
+## 3b. Before the first apply with the token breaker (ADR 0003)
+
+The export adds the token breaker (`sgea-<env>-token-breaker` state machine, rule and roles, the deny policy `sgea-<env>-token-budget-exhausted`, the alarm `sgea-<env>-token-breaker-failures`), new meter permissions and environment, and `stepfunctions` in `services.allow` (so the service allow-list SCP now permits `states:*`). Before you apply:
+
+1. **SCP bundles first.** Apply the updated SCP bundles from the management account before (or together with) the enclave change, or the state machine cannot be created where the old allow-list denies `states:*`.
+2. **Tenants tag their runtime roles** `sgea:team = <team>` (TR-26), one team per role. Untagged roles are never touched by the breaker; they stay bounded on the gateway tool path only. Tell tenants whose IaC manages role policy attachments exclusively to exclude the enclave's attachment.
+3. **Opt out** with `token_control.model_enforce = false` in the profile if the landing zone already caps Bedrock use per team.
+4. **A team already over its monthly budget** is tripped by its next metered model call after the apply, so its model calls are denied within minutes. Check the ledger (`pk=team#<team>`, `sk=month#YYYY-MM`) against `per_team_monthly_tokens` before the apply and agree any override (incident response [playbook 2](incident-response.md#2-token-budget-exhausted-for-a-user-or-team)).
+
 ## 4. Disruptive changes
 
 Treat any of these in a plan or change set as a stop-and-review item. "Replacement" means a new resource with a new

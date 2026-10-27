@@ -72,6 +72,13 @@ resource "aws_cognito_user_pool_client" "agent" {
   }
 }
 
+# The test user's team: the cognito:groups claim names the team the enclave's per-team budget charges.
+resource "aws_cognito_user_group" "team" {
+  name         = "${local.name}-team"
+  user_pool_id = aws_cognito_user_pool.test_idp.id
+  description  = "SGEA sample team (token_control team_claim = cognito:groups)."
+}
+
 # ----- tool behind the enclave gateway -----
 module "tool" {
   source  = "terraform-aws-modules/lambda/aws"
@@ -192,6 +199,9 @@ resource "awscc_bedrockagentcore_policy" "permit_facts_tool" {
 # ----- agent execution role (least privilege) -----
 resource "aws_iam_role" "agent" {
   name = "${local.name}-agent"
+  # TR-26 / ADR 0003: one team per runtime role. Once this team's monthly tokens reach the enclave budget, the
+  # enclave breaker attaches sgea-<env>-token-budget-exhausted here and model calls are denied until release.
+  tags = { "sgea:team" = aws_cognito_user_group.team.name }
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{

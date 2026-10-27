@@ -12,12 +12,14 @@ import json, os
 
 try:
     from .derived import (account_baseline, backup_policy, catalog_rules, conformance_pack_files,
-                          log_retention_days, policy_engine_available, replica_region)
+                          log_retention_days, policy_engine_available, replica_region,
+                          token_model_enforce)
     from . import manual_steps
     from .terraform_emitter import CT_FILTERS, EVENT_RULES
 except ImportError:  # in-repo fallback import (sgea._load_emitters)
     from derived import (account_baseline, backup_policy, catalog_rules, conformance_pack_files,
-                         log_retention_days, policy_engine_available, replica_region)
+                         log_retention_days, policy_engine_available, replica_region,
+                         token_model_enforce)
     import manual_steps
     from terraform_emitter import CT_FILTERS, EVENT_RULES
 
@@ -74,6 +76,10 @@ def alarms(resolved, root):
                     "Sum < 1 for 2 x 15 min (missing data = breaching)",
                     "Meter heartbeat stopped; after `fail_closed_hours` (%s h) the interceptor denies every tool call." % (
                         resolved["token_control"].get("fail_closed_hours", 4))))
+    if meter and token_model_enforce(resolved):
+        out.append(("sgea-<env>-token-breaker-failures", "`AWS/States` `ExecutionsFailed`, StateMachineArn `sgea-<env>-token-breaker`",
+                    "Sum >= 1 over 5 min", "Token breaker (ADR 0003) failed: an exhausted team's model calls may not be denied, "
+                    "or a release may be stuck. See the execution history of `sgea-<env>-token-breaker`."))
     return out + monitoring_alarms(resolved)
 
 

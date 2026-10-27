@@ -205,6 +205,29 @@ def test_token_vault_custom_resource_has_delete_handler():
     assert pol and "/identities/set-token-vault-cmk" in json.dumps(pol[0]["PolicyDocument"])
 
 
+# ---- ADR 0003 model-call breaker -----------------------------------------------
+def test_token_breaker_resources():
+    t = _commercial()
+    (sm,) = [p for p in _of(t, "AWS::StepFunctions::StateMachine") if p["StateMachineName"] == "sgea-%s-token-breaker" % ENV]
+    assert sm["LoggingConfiguration"]["IncludeExecutionData"] is False and sm["TracingConfiguration"]["Enabled"] is True
+    asl = json.dumps(sm["DefinitionString"])
+    assert "JSONata" in asl and "aws-sdk:iam:attachRolePolicy" in asl and "dynamodb:getItem" in asl and "${" not in asl.replace("${Token", "")
+    (deny,) = [p for p in _of(t, "AWS::IAM::ManagedPolicy") if p.get("ManagedPolicyName") == "sgea-%s-token-budget-exhausted" % ENV]
+    (st,) = deny["PolicyDocument"]["Statement"]
+    assert st["Effect"] == "Deny" and sorted(st["Action"]) == ["bedrock:InvokeModel*", "bedrock:RetrieveAndGenerate*"]
+    (bp,) = [p for p in _of(t, "AWS::IAM::ManagedPolicy") if p.get("ManagedPolicyName") == "sgea-%s-token-breaker" % ENV]
+    sids = {x["Sid"]: x for x in bp["PolicyDocument"]["Statement"]}
+    assert "aws:ResourceTag/sgea:team" in json.dumps(sids["AttachDenyToTeamRoles"]["Condition"])
+    assert "iam:PolicyARN" in json.dumps(sids["DetachDeny"]["Condition"]) and sids["NeverBreakGlass"]["Effect"] == "Deny"
+    (rule,) = [p for p in _of(t, "AWS::Events::Rule") if p.get("Name") == "sgea-%s-token-breaker" % ENV]
+    assert rule["EventPattern"] == {"source": ["sgea.token-meter"], "detail-type": ["SGEA Token Budget Breaker"]}
+    assert "sgea-%s-token-breaker-failures" % ENV in _names(t, "AWS::CloudWatch::Alarm", "AlarmName")
+    meter = [r["Properties"] for k, r in t.items() if r["Type"] == "AWS::Lambda::Function" and "TokenMeter" in k][0]
+    assert meter["Environment"]["Variables"]["TOKEN_BREAKER"] == "1"
+    put = [x for p in _of(t, "AWS::IAM::ManagedPolicy") for x in p["PolicyDocument"]["Statement"] if x.get("Sid") == "BreakerEvents"]
+    assert put and put[0]["Condition"] == {"StringEquals": {"events:source": "sgea.token-meter"}}
+
+
 def _run():
     fns = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
     passed = failed = skipped = 0

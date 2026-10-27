@@ -380,6 +380,10 @@
         },
         "per_team_monthly_tokens": {
           "type": "integer"
+        },
+        "model_enforce": {
+          "type": "boolean",
+          "description": "Default true. Once a team's monthly tokens reach per_team_monthly_tokens, attach the enclave deny policy sgea-<env>-token-budget-exhausted to the runtime roles tagged sgea:team = that team (ADR 0003), so model calls are denied too, not only gateway tool calls. Needs model-invocation logging and the stepfunctions + eventbridge services."
         }
       }
     },

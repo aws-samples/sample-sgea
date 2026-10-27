@@ -157,6 +157,16 @@ controls:
     level: required
     applies_when: token_control.enabled && logging.model_invocation_logging
     rationale: The token ledger is credited from the enclave's Bedrock model-invocation logs, so budget enforcement reflects every logged model call.
+  - id: SGEA-TC-03
+    service: bedrock
+    resource: aws_sfn_state_machine
+    attribute: role_arn
+    require: {op: set}
+    cfn: {type: AWS::StepFunctions::StateMachine, attribute: RoleArn}
+    topic: Network Access and Resource/Attribute-Based Access Policies
+    level: required
+    applies_when: token_control.enabled && logging.model_invocation_logging && token_control.per_team_monthly_tokens && token_control.model_enforce != False
+    rationale: The per-team monthly token budget also bounds model calls, not only gateway tool calls. Once a team reaches its budget, the SGEA token breaker (ADR 0003) attaches the enclave deny policy sgea-<env>-token-budget-exhausted to that team's runtime roles (tagged sgea:team) and detaches it at month rollover or when the budget is raised. It acts only on the token ledger's trip records.
   - id: SGEA-AC-GW-04
     service: bedrock-agentcore
     resource: awscc_bedrockagentcore_policy_engine

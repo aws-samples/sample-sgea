@@ -14,7 +14,7 @@
   },
   "overrides": {
     "services": {
-      "allow": ["bedrock", "bedrock-agentcore", "aurora-postgresql", "kms", "cloudwatch", "cloudtrail", "s3", "lambda", "dynamodb", "sns", "eventbridge"]
+      "allow": ["bedrock", "bedrock-agentcore", "aurora-postgresql", "kms", "cloudwatch", "cloudtrail", "s3", "lambda", "dynamodb", "sns", "eventbridge", "stepfunctions"]
     }
   }
 }

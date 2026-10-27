@@ -11,7 +11,7 @@ records the as-deployed configuration as evidence.
 
 SGEA is customer-agnostic: a profile never contains customer data, and a reference adopter never changes the IaC.
 
-![Four-layer shared responsibility for agentic AI: AWS (inherited cloud service controls), the platform team's enclave (guardrails, logging, isolation, keys, network; operated once and shared by tenants), each application team (its application, data and configuration) and the ISSO / authorizing official (determines compliance). SGEA checks 181 conformance-pack rules and 43 Bedrock / AgentCore controls across 9 framework baselines with 0 open coverage gaps; it evaluates the IaC and does not make the system compliant.](docs/diagrams/sgea_01_shared_responsibility.png)
+![Four-layer shared responsibility for agentic AI: AWS (inherited cloud service controls), the platform team's enclave (guardrails, logging, isolation, keys, network; operated once and shared by tenants), each application team (its application, data and configuration) and the ISSO / authorizing official (determines compliance). SGEA checks 181 conformance-pack rules and 44 Bedrock / AgentCore controls across 9 framework baselines with 0 open coverage gaps; it evaluates the IaC and does not make the system compliant.](docs/diagrams/sgea_01_shared_responsibility.png)
 
 > **Sample code — not for production use as is.** SGEA is sample code for demonstration and evaluation. It has not completed a security review for your environment and is not intended for production use without your own security review, testing and authorization. Deploying it does not make a system compliant with, or authorized under, any framework: that is determined by your assessor or authorizing official for your whole system.
 
@@ -57,7 +57,7 @@ Around that, the toolkit provides:
 - **Control coverage register** — every Config rule of every pack has a check or a recorded disposition; the catalog
   build fails otherwise (`docs/CONTROL-COVERAGE.md`).
 - **Sample tenant agent** (`examples/sample-agent`) — an AgentCore Runtime agent that uses the enclave's guardrail,
-  gateway tool path, memory and token budgets, with a 7-check end-to-end test.
+  gateway tool path, memory and token budgets, with a 9-check end-to-end test.
 - **Sandbox tooling** — one-command deploy + e2e test + teardown in a dedicated sandbox account, a profile x engine
   matrix runner, and a read-only **as-deployed configuration evidence** collector ([`docs/TESTING.md`](docs/TESTING.md)).
 - **Framework documents** (`docs/frameworks/`) — one generated page per framework: conformance packs, profiles,
@@ -201,7 +201,7 @@ profile name, or `env` to use the ambient credential chain. The teardown (and ev
 unless the credentials' account equals the account id you pass. Full walkthrough, prerequisites and cleanup: [`docs/TESTING.md`](docs/TESTING.md).
 
 ```bash
-# network + enclave (gated on sgea check) + sample tenant agent, then the 7-check e2e test
+# network + enclave (gated on sgea check) + sample tenant agent, then the 9-check e2e test
 examples/run_sandbox_test.sh my-sandbox-profile profiles/fedramp-moderate-hipaa.commercial.json --yes        # Terraform
 examples/run_sandbox_test.sh my-sandbox-profile profiles/fedramp-moderate-hipaa.commercial.json --yes --cdk  # CloudFormation
 
@@ -223,7 +223,7 @@ AWS_PROFILE=my-sandbox-profile python3 tools/collect_evidence.py --profile profi
 The **e2e test** (`examples/sample-agent/scripts/e2e_test.py`) asserts: an authenticated (JWT) invocation is answered
 through the enclave guardrail · the agent's gateway tool call is **allowed** by the tool-path policy · a PII prompt is
 blocked · contextual PII (e.g. an address) is masked, not blocked · the token meter credits the caller's usage · an
-over-budget caller's tool calls are denied · an unauthenticated call is rejected (401).
+over-budget caller's tool calls are denied · an over-budget team's model calls are denied by the token breaker (ADR 0003) · the breaker releases once the team is back under budget · an unauthenticated call is rejected (401).
 
 The **teardown** collects evidence first (by default to `docs/evidence/<profile>-<engine>.{md,json}`), then destroys the tenant,
 lifts deletion protections, empties the stores, resets the account-wide AgentCore token vault, and destroys the
@@ -236,7 +236,7 @@ enclave; the shared sandbox network is kept unless `--network`. It refuses to ru
 |---|---|---|---|
 | `fedramp-low.commercial` | FedRAMP Low | commercial | **Sandbox-validated** — e2e 7/7 on Terraform and CDK, evidence |
 | `fedramp-moderate-hipaa.commercial` | FedRAMP Moderate + HIPAA | commercial | **Sandbox-validated** — 7/7 both engines, evidence |
-| `fedramp-moderate-hitrust.commercial` | FedRAMP Moderate + HIPAA + HITRUST | commercial | **Sandbox-validated** — 7/7 both engines, evidence |
+| `fedramp-moderate-hitrust.commercial` | FedRAMP Moderate + HIPAA + HITRUST | commercial | **Sandbox-validated** — 9/9 both engines (token breaker, ADR 0003; 2026-10-27), evidence |
 | `fedramp-moderate-part11.commercial` | FedRAMP Moderate + FDA 21 CFR Part 11 | commercial | **Sandbox-validated** — 7/7 both engines, evidence |
 | `dod-il2.commercial` | FedRAMP Moderate + DoD IL2 | commercial | **Sandbox-validated** — 7/7 both engines, evidence (baseline still flagged scaffold) |
 | `fedramp-high.govcloud` | FedRAMP High | GovCloud | Scaffold — `sgea verify` passes; not deployed (needs a GovCloud account) |
@@ -277,7 +277,7 @@ Both engines emit the same resources (Terraform module → CDK construct of the 
 | Logging (`enclave-logging`) | CloudTrail (multi-region, log validation, CMK, CloudWatch delivery, Bedrock / AgentCore / S3 data events); log store (S3: CMK, versioning, Object Lock, TLS-only, Block Public Access, access logging, EventBridge notifications, `s3:ObjectRemoved:*` to a CMK-encrypted SNS topic, cross-region replica); AWS Config delivery bucket; CloudWatch log groups (CMK, retention = max(baseline, pack minimum)); Bedrock model-invocation logging; security-alarm SNS topic (CMK) |
 | Guardrails (`bedrock-guardrail`) | Bedrock guardrail from the profile (content filters, PII/PHI entities — hard identifiers BLOCK, contextual entities ANONYMIZE — denied topics, tier), immutable version, account-enforced guardrail (every user message guarded; system prompt where tagged) |
 | AgentCore (`agentcore-platform`, `agentcore-runtime`) | Gateway (JWT or IAM auth, CMK, Cedar policy engine in ENFORCE mode — or the SGEA REQUEST interceptor where the engine is unavailable, e.g. GovCloud), memory (CMK, event expiry), token-vault CMK, ECR (immutable tags, scan on push, CMK, lifecycle); runtime wrapper for tenants (VPC-only, JWT authorizer, idle timeout, header allow-list, VPC-endpoint-restricted resource policy) |
-| Token control (`token-control`) | Usage ledger (DynamoDB: CMK, PITR, deletion protection); meter Lambda (invocation-log subscription, 15-minute heartbeat, first heartbeat at deploy); the gateway interceptor denies tool calls past per-user daily / per-team monthly budgets and fails closed |
+| Token control (`token-control`) | Usage ledger (DynamoDB: CMK, PITR, deletion protection); meter Lambda (invocation-log subscription, 15-minute heartbeat, first heartbeat at deploy); the gateway interceptor denies tool calls past per-user daily / per-team monthly budgets and fails closed; the token breaker (ADR 0003: EventBridge → Step Functions, no Lambda) attaches the deny policy `sgea-<env>-token-budget-exhausted` to an exhausted team's `sgea:team`-tagged runtime roles, so its model calls are denied too, and releases it at month rollover or when the budget is raised |
 | Network (`enclave-network`) | Interface endpoints for every allowed service (private DNS, only in AZs the service supports), S3 and DynamoDB gateway endpoints, VPC flow logs (CMK) |
 | Vector store (`enclave-aurora`) | Aurora PostgreSQL Serverless v2: CMK, IAM auth, Data API, TLS-only, deletion protection, multi-AZ, RDS-managed rotating admin secret on the CMK, CMK log group |
 | Backup (`enclave-backup`) | Vault (CMK, vault lock, deny-deletion access policy), daily plan with the pack retention, one selection covering Aurora, the token ledger and the log / config stores |
@@ -305,7 +305,7 @@ reports NON_COMPLIANT by design are listed there as documented exceptions, with 
 
 The other rules concern services the enclave neither deploys nor allows, the customer's landing zone / identity / VPC,
 manual processes, or results only observable at runtime — each with its reason in `docs/CONTROL-COVERAGE.md`. SGEA also
-checks 43 Bedrock / AgentCore controls of its own (`sources/inferred/service-controls.yaml`).
+checks 44 Bedrock / AgentCore controls of its own (`sources/inferred/service-controls.yaml`).
 
 The published catalogs do not carry the AWS Artifact-derived responsibility-matrix rows (FedRAMP / DoD CRM); download
 the AWS Artifact reports yourself and rebuild to add them ([Maintaining the source data](#maintaining-the-source-data)).
@@ -402,6 +402,7 @@ pytest -q
   - Terraform has no fixed deployment role: list your pipeline role in `policies.org_policy_exempt_principal_arns` before the SCP bundles are applied, or applies that change the trail, the Config recorder, `/sgea/*` log groups or the enclave key are denied.
   - The audit-protection SCP exemption matches role names (`sgea-*-break-glass`, `cdk-hnb659fds-cfn-exec-role-*`) across accounts, so a principal that can create IAM roles could create a matching role and bypass the denies; restrict `iam:CreateRole` in your landing zone until exact, account-scoped ARNs replace the patterns.
   - Terraform does not reset the account-wide AgentCore token vault on destroy (the provider's delete is a no-op); switch it to the service-managed key before `terraform destroy` (`docs/operations/decommissioning.md`). CDK resets it on stack deletion.
+- **Token budgets bound model calls per team, not per user** (ADR 0003, `docs/adr/0003-token-budget-model-breaker.md`): the token breaker denies an exhausted team's model calls on its `sgea:team`-tagged runtime roles within minutes of the invocation log, so a burst can overshoot; per-user daily budgets and roles shared by several teams are bounded on the gateway tool path only.
 - **GovCloud profiles are not deployment-validated** (no GovCloud account in the validation sandbox).
 - **AgentCore is not authorized at DoD IL4 / IL5** (AWS Services in Scope: "Independent Assessment"); those profiles
   stay scaffold-only until AWS completes the assessment.

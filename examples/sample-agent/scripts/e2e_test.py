@@ -12,6 +12,9 @@ Creates (once) a test user in the sample's Cognito test IdP, obtains a JWT, and 
   5. a contextual entity in ordinary text ("France" = ADDRESS) is anonymized, not blocked
   6. the enclave token meter credited the caller's usage to the token-control ledger
   7. once the caller's daily budget is spent, the gateway interceptor denies their tool calls
+  8. once the caller's team has spent its monthly budget, the enclave breaker (ADR 0003) attaches the
+     deny policy to the team's runtime role and the agent's model calls are denied
+  9. once the team is back under budget, the breaker detaches the policy again
 Usage: e2e_test.py <sample infra `terraform output -json`>   (AWS creds in env)
 """
 import datetime, json, secrets, string, sys, time, urllib.error, urllib.parse, urllib.request, uuid
@@ -28,6 +31,8 @@ try:
 except idp.exceptions.UsernameExistsException:
     pass
 sub = next(a["Value"] for a in idp.admin_get_user(UserPoolId=pool, Username=user)["UserAttributes"] if a["Name"] == "sub")
+if out.get("team"):
+    idp.admin_add_user_to_group(UserPoolId=pool, Username=user, GroupName=out["team"])   # cognito:groups -> team
 idp.admin_set_user_password(UserPoolId=pool, Username=user, Password=password, Permanent=True)
 token = idp.initiate_auth(ClientId=client_id, AuthFlow="USER_PASSWORD_AUTH",
                           AuthParameters={"USERNAME": user, "PASSWORD": password})["AuthenticationResult"]["AccessToken"]
@@ -54,7 +59,7 @@ results = []
 
 SAFE_KEYS = {"status", "stop_reason", "guardrail_action", "guardrail_policies", "guardrail_findings", "tool_calls", "tools",
              "denied_by_policy", "reason", "tool", "ledger_key", "tokens", "masked", "model", "guardrail", "side", "policy",
-             "type", "action", "confidence", "memory_event_id", "pk", "sk"}
+             "type", "action", "confidence", "memory_event_id", "pk", "sk", "model_denied"}
 
 
 def _safe(v):
@@ -121,6 +126,42 @@ if ledger_name:
              {"status": code, "tool_calls": calls})
     finally:
         ledger.update_item(Key=key, UpdateExpression="SET tokens = :u", ExpressionAttributeValues={":u": used})
+
+    policy, team, role = out.get("token_budget_exhausted_policy_arn"), out.get("team"), out.get("agent_role_name")
+    if policy and team and role and int(out.get("token_per_team_monthly") or 0):
+        iam, lam = boto3.client("iam"), boto3.client("lambda", region_name=region)
+
+        def attached():
+            return any(p["PolicyArn"] == policy for p in iam.list_attached_role_policies(RoleName=role)["AttachedPolicies"])
+
+        def wait(want, tries):
+            for _ in range(tries):
+                if attached() == want:
+                    return True
+                time.sleep(10)
+            return False
+
+        tkey = {"pk": "team#" + team, "sk": "month#" + datetime.datetime.now(tz).strftime("%Y-%m")}
+        team_used = int((ledger.get_item(Key=tkey, ConsistentRead=True).get("Item") or {}).get("tokens", 0))
+        ledger.update_item(Key=tkey, UpdateExpression="SET tokens = :b",
+                           ExpressionAttributeValues={":b": max(int(out["token_per_team_monthly"]), team_used)})
+        try:
+            invoke("Say OK.")   # this call is still allowed; its metered tokens trip the team's breaker
+            tripped = wait(True, 30)   # invocation log -> meter -> EventBridge -> Step Functions -> IAM
+            time.sleep(15)             # IAM propagation
+            code, body = invoke("Say OK again.")
+            model_denied = isinstance(body, dict) and body.get("trace", {}).get("model_denied") is True
+            case("over-budget team: model calls denied (ADR 0003 breaker)", tripped and code == 200 and model_denied,
+                 {"policy": "attached" if tripped else "not attached", "status": code, "model_denied": model_denied,
+                  "type": (body.get("error") if isinstance(body, dict) else str(body)[:200])})
+        finally:
+            ledger.update_item(Key=tkey, UpdateExpression="SET tokens = :u", ExpressionAttributeValues={":u": team_used})
+            for _ in range(2):   # heartbeat sweep: mark released + detach, then detach + forget
+                lam.invoke(FunctionName=out["token_meter_function"], Payload=b"{}")
+                time.sleep(20)
+            released = wait(False, 18)
+            case("team back under budget: breaker detached the deny policy", released,
+                 {"policy": "detached" if released else "still attached"})
 code, body = invoke("hello", bearer=None)
 case("unauthenticated invocation rejected", code in (401, 403), {"status": code})
 print("\n%d/%d passed" % (sum(results), len(results)))

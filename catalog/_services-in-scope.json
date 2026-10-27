@@ -154,6 +154,17 @@
       "DoD CSP SRG IL5 (GovCloud)": "\u2713",
       "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
       "HIPAA Eligible": "\u2713"
+    },
+    "stepfunctions": {
+      "FedRAMP  Class C (formerly Moderate baseline) (East/West)": "\u2713",
+      "FedRAMP  Class D (formerly High baseline) (GovCloud)": "\u2713",
+      "FedRAMP Not Required*": "",
+      "DoD CSP SRG IL2 (East/West)": "\u2713",
+      "DoD CSP SRG IL2 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL4 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL5 (GovCloud)": "\u2713",
+      "DoD CSP SRG IL6 (AWS Secret Region )": "\u2713",
+      "HIPAA Eligible": "\u2713"
     }
   }
 }

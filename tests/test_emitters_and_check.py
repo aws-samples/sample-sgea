@@ -361,8 +361,9 @@ class _FakeTable:
         it = self.items.get((Key["pk"], Key["sk"]))
         return {"Item": it} if it else {}
 
-    def update_item(self, Key, UpdateExpression, ExpressionAttributeValues):
+    def update_item(self, Key, UpdateExpression, ExpressionAttributeValues, **kw):
         self.updates.append((Key["pk"], Key["sk"], ExpressionAttributeValues[":t"]))
+        return {"Attributes": {"tokens": ExpressionAttributeValues[":t"]}}
 
     def put_item(self, Item):
         self.items[(Item["pk"], Item["sk"])] = Item

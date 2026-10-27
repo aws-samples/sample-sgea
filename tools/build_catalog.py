@@ -109,7 +109,7 @@ SGEA_GUIDE_SERVICES = {
     "cloudtrail": "AWS CloudTrail", "s3": "Amazon S3 and Glacier", "lambda": "AWS Lambda",
     "dynamodb": "Amazon DynamoDB", "sns": "Amazon Simple Notification Service (SNS)",
     "firehose": "Amazon Data Firehose", "cognito": "Amazon Cognito",
-    "elasticache": "Amazon ElastiCache for Redis",
+    "elasticache": "Amazon ElastiCache for Redis", "stepfunctions": "AWS Step Functions",
     "iam": "AWS Identity and Access Management (IAM)", "organizations": "AWS Organizations",
     "vpc": "Amazon Virtual Private Cloud (VPC)", "config": "AWS Config",
     "guardduty": "Amazon GuardDuty", "secretsmanager": "AWS Secrets Manager",
@@ -308,7 +308,7 @@ SIS_NAMES = {
     "lambda": ["AWS Lambda"], "dynamodb": ["Amazon DynamoDB"],
     "sns": ["Amazon Simple Notification Service", "Amazon SNS"], "eventbridge": ["Amazon EventBridge"],
     "firehose": ["Amazon Data Firehose", "Amazon Kinesis Data Firehose"], "cognito": ["Amazon Cognito"],
-    "elasticache": ["Amazon ElastiCache"],
+    "elasticache": ["Amazon ElastiCache"], "stepfunctions": ["AWS Step Functions"],
 }
 
 
@@ -355,7 +355,7 @@ REGION_NAMES = {
     "s3": "Amazon Simple Storage Service (S3)", "lambda": "AWS Lambda", "dynamodb": "Amazon DynamoDB",
     "sns": "Amazon Simple Notification Service (SNS)", "eventbridge": "Amazon EventBridge",
     "firehose": "Amazon Data Firehose", "cognito": "Amazon Cognito", "elasticache": "Amazon ElastiCache",
-    "config": "AWS Config",
+    "stepfunctions": "AWS Step Functions", "config": "AWS Config",
 }
 GOVCLOUD_PAGES = {"bedrock": "govcloud-govcloud-bedrock.html", "bedrock-agentcore": "govcloud-govcloud-bedrock-agentcore.html",
                   "aurora-postgresql": "govcloud-govcloud-aurora.html"}

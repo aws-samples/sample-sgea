@@ -2,7 +2,7 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 # SGEA sandbox matrix: every commercial-region profile x {terraform, cdk}, one at a time:
-#   deploy (gated on sgea check) -> 7-check e2e -> teardown (keeps the shared sandbox network).
+#   deploy (gated on sgea check) -> 9-check e2e -> teardown (keeps the shared sandbox network).
 # Results are appended to docs/SANDBOX-MATRIX.md; full logs in /tmp/sgea-matrix/.
 #
 #   tools/sandbox_matrix.sh <credentials> <account-id> --yes [profile.json[:terraform|:cdk] ...]

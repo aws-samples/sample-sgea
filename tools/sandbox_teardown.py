@@ -112,6 +112,7 @@ def cdk_destroy(a, acct, region, regions, state, empty_buckets):
     for r in regions:
         logs = boto3.client("logs", region_name=r)
         for prefix in ("/sgea/%s/" % env, "/aws/lambda/sgea-%s-" % env, "/aws/bedrock-agentcore/",
+                       "/aws/vendedlogs/states/sgea-%s-" % env,   # ADR 0003 token breaker (CDK RETAINs it)
                        "/aws/lambda/SgeaEnclave-"):   # CDK helper functions' default log groups (pre-DeployHelperLogs runs)
             for page in logs.get_paginator("describe_log_groups").paginate(logGroupNamePrefix=prefix):
                 for g in page["logGroups"]:

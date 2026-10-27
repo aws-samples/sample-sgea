@@ -26,7 +26,8 @@
         "lambda",
         "dynamodb",
         "sns",
-        "eventbridge"
+        "eventbridge",
+        "stepfunctions"
       ]
     }
   },

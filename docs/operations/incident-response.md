@@ -20,8 +20,9 @@ AWS Config evidence again.
 | A1 | Alarm `sgea-<env>-tool-policy-errors`: Lambda `Errors` > 0 in 5 min on `sgea-<env>-tool-policy` | `agentcore-platform` (deployed when the interceptor is: GovCloud tool-path stand-in or token budgets) | `sgea-<env>-security-alarms` | [3](#3-gateway-interceptor-denies-every-tool-call) |
 | A2 | Alarm `sgea-<env>-token-meter-errors`: `Errors` > 0 in 5 min on `sgea-<env>-token-meter` | `token-control` (Terraform) / `governance` (CDK) | `sgea-<env>-security-alarms` | [3](#3-gateway-interceptor-denies-every-tool-call) |
 | A3 | Alarm `sgea-<env>-token-meter-silent`: `Invocations` < 1 for 2 x 15 min, missing data = breaching | as A2 | `sgea-<env>-security-alarms` | [3](#3-gateway-interceptor-denies-every-tool-call) |
+| A4 | Alarm `sgea-<env>-token-breaker-failures`: `AWS/States` `ExecutionsFailed` >= 1 in 5 min on `sgea-<env>-token-breaker` (ADR 0003) | `token-control` / `governance`, where `token_control.model_enforce` is on | `sgea-<env>-security-alarms` | [2](#2-token-budget-exhausted-for-a-user-or-team) |
 | S1 | SNS `sgea-<env>-log-store-events`: `s3:ObjectRemoved:*` from the log store, the AWS Config store and the access-log sink (primary region; the replica buckets do not notify) | `enclave-logging` / `hardened-bucket` | subscribers you add | [5](#5-unexpected-object-deletion-on-the-log-stores) |
-| L1 | Interceptor decision log: one JSON line per `tools/call` (`sgea`, `decision`, `reason`, `tool`, `user`, `team`, `client_id`; never the token) | `emitters/lambda/tool_policy_interceptor.py` | `/aws/lambda/sgea-<env>-tool-policy` | [2](#2-token-budget-exhausted-for-a-user), [3](#3-gateway-interceptor-denies-every-tool-call), [7](#7-suspected-credential-compromise-of-a-tenant-user-cognito--jwt) |
+| L1 | Interceptor decision log: one JSON line per `tools/call` (`sgea`, `decision`, `reason`, `tool`, `user`, `team`, `client_id`; never the token) | `emitters/lambda/tool_policy_interceptor.py` | `/aws/lambda/sgea-<env>-tool-policy` | [2](#2-token-budget-exhausted-for-a-user-or-team), [3](#3-gateway-interceptor-denies-every-tool-call), [7](#7-suspected-credential-compromise-of-a-tenant-user-cognito--jwt) |
 | L2 | Guardrail interventions: the caller sees `Blocked by enclave guardrail.` | `bedrock-guardrail` (`blocked_input_messaging` / `blocked_outputs_messaging`) | model-invocation logs | [1](#1-guardrail--pii-block-spike) |
 | L3 | CloudTrail `sgea-<env>` (multi-region, log-file validation, enclave CMK; Bedrock / AgentCore / S3 data events per profile) and AWS Config recorder / delivery channel `sgea-<env>` | `enclave-logging`, `config-conformance` | log store, `/sgea/<env>/cloudtrail`, Config store | [4](#4-cloudtrail-or-aws-config-delivery-stopped) |
 | G1 | GuardDuty detector (`FIFTEEN_MINUTES` publishing) and Security Hub with NIST SP 800-53 Rev 5 | `security-services` (unless `create_guardduty` / `create_securityhub` = false) | GuardDuty / Security Hub consoles, your SIEM; high-severity findings also routed to `sgea-<env>-security-alarms` by E1 / E2 | [6](#6-guardduty-high-severity-finding) |
@@ -132,12 +133,11 @@ guardrail changes, and the approval for any profile change.
 
 ---
 
-## 2. Token budget exhausted for a user
+## 2. Token budget exhausted for a user or team
 
 **Trigger.** A tool call returns JSON-RPC error `-32003` with
 `Tool call denied by enclave token-budget: per-user daily token budget exhausted` (or
-`per-team monthly token budget exhausted`). This is the control working, so there is no alarm. Budgets gate
-**gateway tool calls** (`tools/call`). The interceptor does not block model invocations.
+`per-team monthly token budget exhausted`); or, for a team past its monthly budget, the team's model calls fail with `AccessDeniedException` because the token breaker (ADR 0003) attached `sgea-<env>-token-budget-exhausted` to its `sgea:team`-tagged runtime role. This is the control working, so there is no alarm; `sgea-<env>-token-breaker-failures` (A4) fires only when the breaker itself fails. Per-user budgets gate gateway tool calls only; per-team budgets gate tool calls and, through the breaker, model calls.
 
 **Likely causes:** legitimate heavy use; an agent stuck in a tool-call loop; someone else using the user's token
 ([playbook 7](#7-suspected-credential-compromise-of-a-tenant-user-cognito--jwt)); many users sharing one team claim
@@ -168,6 +168,15 @@ guardrail changes, and the approval for any profile change.
    ```
    Usage without `sgea_user` is credited to `principal:<IAM ARN>` (the meter's fallback), not to a user.
 
+5. For a team: see which roles the breaker holds and whether the deny policy is attached:
+   ```bash
+   aws dynamodb query --table-name sgea-token-usage-<env> --consistent-read \
+       --key-condition-expression 'pk = :p' --expression-attribute-values '{":p":{"S":"breaker"}}'
+   aws iam list-entities-for-policy --policy-arn arn:<partition>:iam::<account>:policy/sgea-<env>-token-budget-exhausted
+   aws stepfunctions list-executions --state-machine-arn arn:<partition>:states:<region>:<account>:stateMachine:sgea-<env>-token-breaker --max-results 10
+   ```
+   A trip with no attachment means the role is not tagged `sgea:team` = that team (TR-26), or the tenant's IaC detached it (the next 15-minute heartbeat re-attaches); a failed execution is A4.
+
 **Containment:** if the usage is not the user's, go to playbook 7. For a runaway agent, have the tenant team stop the
 session or app.
 
@@ -176,10 +185,17 @@ session or app.
 - The user budget resets at the next day in `TOKEN_TIMEZONE`. The team budget resets at the next month.
 - To raise a budget, change `token_control.per_user_daily_tokens` / `per_team_monthly_tokens` in the profile,
   re-export and redeploy. The interceptor reads its budgets from its environment.
-- Do not edit or delete ledger items. They are the usage record (PITR on, covered by the backup plan).
+- The breaker releases a team on the first heartbeat after month rollover or after a redeploy that raises its budget (two heartbeats: mark released, then forget), so allow up to 30 minutes.
+- Emergency release for the rest of the month (approved by the ISSO / budget owner): write an override item, then wait for the next heartbeat (or invoke the meter with an empty event twice):
+  ```bash
+  aws dynamodb put-item --table-name sgea-token-usage-<env> \
+      --item '{"pk":{"S":"override"},"sk":{"S":"team#<team>#month#<YYYY-MM>"},"by":{"S":"<ticket>"}}'
+  aws lambda invoke --function-name sgea-<env>-token-meter --payload '{}' /dev/null
+  ```
+  Do not detach the policy by hand without the override: the next heartbeat attaches it again. Delete the override item to restore enforcement.
+- Do not edit or delete ledger usage items. They are the usage record (PITR on, covered by the backup plan).
 
-**Evidence to keep:** the deny log lines, the ledger item, the per-user token query, and the approval for any
-budget change.
+**Evidence to keep:** the deny log lines, the ledger item, the per-user token query, the breaker trip / override items and the CloudTrail `AttachRolePolicy` / `DetachRolePolicy` events by `sgea-<env>-token-breaker`, and the approval for any budget change or override.
 
 **Controls:** SC-6, AC-3, AU-6, SI-4.
 
@@ -676,7 +692,7 @@ Common causes: the enclave key disabled or its grants missing; the resource dele
 
 | Alarm | Means | First look |
 |---|---|---|
-| `sgea-<env>-bedrock-throttles` | At least 10 throttled model calls in each of two 5-minute periods (account total) | Service quotas (tokens and requests per minute per model), a runaway agent ([playbook 2](#2-token-budget-exhausted-for-a-user), step 4 query) |
+| `sgea-<env>-bedrock-throttles` | At least 10 throttled model calls in each of two 5-minute periods (account total) | Service quotas (tokens and requests per minute per model), a runaway agent ([playbook 2](#2-token-budget-exhausted-for-a-user-or-team), step 4 query) |
 | `sgea-<env>-bedrock-server-errors` | At least 5 Bedrock server errors in 5 minutes | AWS Health Dashboard for Amazon Bedrock in the region; the model in use |
 | `sgea-<env>-bedrock-invocation-log-delivery` | Model-invocation logs not delivered to CloudWatch for 15 minutes | Logging configuration, role `sgea-<env>-bedrock-invocation-logging`, log group `/sgea/<env>/bedrock/model-invocations`, enclave key |
 | `sgea-<env>-gateway-system-errors` | At least 5 gateway system errors on MCP `InvokeGateway` in 5 minutes | Gateway targets (tenant tool functions), the interceptor (alarm A1, log L1) |
@@ -691,7 +707,7 @@ aws service-quotas list-service-quotas --service-code bedrock \
 aws bedrock get-model-invocation-logging-configuration
 ```
 
-For throttles, find the models and apps involved (Bedrock metrics by `ModelId`; the invocation-log query in [playbook 2](#2-token-budget-exhausted-for-a-user), step 4). For log delivery, check that the logging configuration still names the role and log group, that the role's policy is unchanged and that the key is `Enabled`.
+For throttles, find the models and apps involved (Bedrock metrics by `ModelId`; the invocation-log query in [playbook 2](#2-token-budget-exhausted-for-a-user-or-team), step 4). For log delivery, check that the logging configuration still names the role and log group, that the role's policy is unchanged and that the key is `Enabled`.
 
 **Impact.** Throttles and server errors fail tenant requests. Missing invocation logs are an audit gap and stop the token meter from crediting usage, so budgets under-count while it lasts (the meter heartbeat keeps running, so the interceptor does not fail closed). Gateway errors fail tool calls.
 
@@ -720,7 +736,7 @@ aws ce get-anomalies --date-interval StartDate=<YYYY-MM-DD>,EndDate=<YYYY-MM-DD>
     --query 'Anomalies[].[AnomalyStartDate,Impact.TotalImpact,RootCauses]'
 ```
 
-Bedrock cost: find who used the tokens ([playbook 2](#2-token-budget-exhausted-for-a-user), step 4 query). Cost in a region outside the profile or a service the enclave does not use: check GuardDuty ([playbook 6](#6-guardduty-high-severity-finding)) and treat it as a possible credential compromise. If you activated `sgea:tenant` or `sgea:profile` as cost allocation tags, group by them.
+Bedrock cost: find who used the tokens ([playbook 2](#2-token-budget-exhausted-for-a-user-or-team), step 4 query). Cost in a region outside the profile or a service the enclave does not use: check GuardDuty ([playbook 6](#6-guardduty-high-severity-finding)) and treat it as a possible credential compromise. If you activated `sgea:tenant` or `sgea:profile` as cost allocation tags, group by them.
 
 **Containment.** Budgets and anomaly alerts stop nothing. Have the tenant team stop a runaway app; lower token budgets through the profile; for abuse, revoke the credentials and remove the resources.
 

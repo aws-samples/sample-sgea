@@ -1,7 +1,7 @@
 # Testing SGEA in your own sandbox account
 
 This page shows how to deploy an SGEA enclave and the sample tenant agent into **your own** AWS account, run the
-7-check end-to-end test, collect the as-deployed configuration evidence, and tear everything down again. It uses the
+9-check end-to-end test, collect the as-deployed configuration evidence, and tear everything down again. It uses the
 tooling SGEA's own validation runs use:
 
 | Tool | What it does |
@@ -119,9 +119,9 @@ The six steps:
    `.sandbox/<profile-id>[-cdk]/sandbox.auto.tfvars.json` and reused by later runs.
 3. **Agent image** — builds the arm64 sample agent and pushes it to the enclave ECR repository (immutable tag).
 4. **Sample tenant app** — `examples/sample-agent/infra` (test Cognito IdP, gateway tool, AgentCore runtime).
-5. **End-to-end test** — `examples/sample-agent/scripts/e2e_test.py`, 7 checks: authenticated invocation answered
+5. **End-to-end test** — `examples/sample-agent/scripts/e2e_test.py`, 9 checks: authenticated invocation answered
    through the guardrail; gateway tool call allowed; PII prompt blocked; contextual PII anonymized, not blocked; token
-   meter credits the caller; over-budget tool calls denied; unauthenticated call rejected. It prints `N/7 passed`.
+   meter credits the caller; over-budget tool calls denied; over-budget team's model calls denied by the token breaker (ADR 0003); breaker released once back under budget; unauthenticated call rejected. It prints `N/9 passed`.
 6. **Done** — everything stays up for inspection; the script prints the teardown command.
 
 State per run: `.sandbox/<profile-id>/` (Terraform) or `.sandbox/<profile-id>-cdk/` (CDK). Do not delete it before the

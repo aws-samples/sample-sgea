@@ -71,6 +71,7 @@ ENDPOINT_SERVICES = {
     "dynamodb": [], "s3": [], "sns": ["sns"], "eventbridge": ["events"], "firehose": ["kinesis-firehose"],
     "aurora-postgresql": ["rds", "rds-data"], "elasticache": ["elasticache"], "cognito": ["cognito-idp"],
     "cloudtrail": [],
+    "stepfunctions": [],   # the token-budget breaker runs from EventBridge; nothing in the VPC calls Step Functions
 }
 FOUNDATION_ENDPOINTS = ["sts", "secretsmanager", "ecr.api", "ecr.dkr", "ssm",
                         "xray"]   # OpenTelemetry (ADOT) spans from the VPC-only runtime and Lambdas to X-Ray / Transaction Search
@@ -230,6 +231,57 @@ def scca_required(resolved):
     return bool(SCCA_BASELINES & set(resolved["baselines"]))
 
 
+# ADR 0003: names shared by both engines.
+TOKEN_BREAKER_SOURCE = "sgea.token-meter"
+TOKEN_BREAKER_DETAIL_TYPE = "SGEA Token Budget Breaker"
+TOKEN_BREAKER_DENIED_ACTIONS = ["bedrock:InvokeModel*", "bedrock:RetrieveAndGenerate*"]
+
+
+def token_breaker_asl():
+    """ADR 0003 state machine (JSONata). Placeholders ${partition} ${policy_arn} ${ledger_table} are
+    substituted by each engine. Acts only on the ledger's trip record, never on the event alone:
+    attach = an active (not released) trip for this role and team AND the role's sgea:team tag is that
+    team; detach = no trip or a released one. Unknown roles are ignored."""
+    p = "arn:${partition}:states:::"
+    states = {
+        "Lookup": {"Type": "Task", "Resource": p + "dynamodb:getItem",
+                   "Arguments": {"TableName": "${ledger_table}", "ConsistentRead": True,
+                                 "Key": {"pk": {"S": "breaker"}, "sk": {"S": "{% 'role#' & $states.input.role %}"}}},
+                   "Output": "{% $merge([$states.input, {'trip': $states.result.Item}]) %}", "Next": "Decide"},
+        "Decide": {"Type": "Choice", "Default": "Ignored", "Choices": [
+            {"Condition": "{% $states.input.action = 'attach' and $exists($states.input.trip)"
+                          " and $states.input.trip.team.S = $states.input.team and $not($states.input.trip.released.BOOL = true) %}",
+             "Next": "GetRole"},
+            {"Condition": "{% $states.input.action = 'detach' and ($not($exists($states.input.trip))"
+                          " or $states.input.trip.released.BOOL = true) %}", "Next": "Detach"}]},
+        "GetRole": {"Type": "Task", "Resource": p + "aws-sdk:iam:getRole",
+                    "Arguments": {"RoleName": "{% $states.input.role %}"},
+                    "Output": "{% {'role': $states.input.role, 'match': $count($states.result.Role.Tags[Key = 'sgea:team'"
+                              " and Value = $states.input.team]) > 0} %}",
+                    "Catch": [{"ErrorEquals": ["Iam.NoSuchEntityException"], "Next": "Ignored"}], "Next": "TeamTagMatches"},
+        "TeamTagMatches": {"Type": "Choice", "Default": "Ignored",
+                           "Choices": [{"Condition": "{% $states.input.match %}", "Next": "Attach"}]},
+        "Attach": {"Type": "Task", "Resource": p + "aws-sdk:iam:attachRolePolicy",
+                   "Arguments": {"RoleName": "{% $states.input.role %}", "PolicyArn": "${policy_arn}"}, "End": True},
+        "Detach": {"Type": "Task", "Resource": p + "aws-sdk:iam:detachRolePolicy",
+                   "Arguments": {"RoleName": "{% $states.input.role %}", "PolicyArn": "${policy_arn}"},
+                   "Catch": [{"ErrorEquals": ["Iam.NoSuchEntityException"], "Next": "Ignored"}], "End": True},
+        "Ignored": {"Type": "Succeed"},
+    }
+    return json.dumps({"Comment": "SGEA token-budget breaker (ADR 0003)", "QueryLanguage": "JSONata", "StartAt": "Roles",
+                       "States": {"Roles": {"Type": "Map", "Items": "{% $states.input.detail.roles %}", "MaxConcurrency": 5,
+                                            "ItemProcessor": {"ProcessorConfig": {"Mode": "INLINE"}, "StartAt": "Lookup",
+                                                              "States": states}, "End": True}}}, indent=2)
+
+
+def token_model_enforce(resolved):
+    """ADR 0003: deny model calls of an exhausted team's runtime roles (not only its gateway tool calls).
+    On when token control is on, the meter runs (model-invocation logging) and a team budget is set."""
+    tc = resolved.get("token_control", {})
+    return bool(tc.get("enabled") and tc.get("model_enforce", True) and tc.get("per_team_monthly_tokens")
+                and resolved.get("logging", {}).get("model_invocation_logging"))
+
+
 def derive(resolved, root):
     """Everything an emitter needs beyond the resolved config, in one document."""
     g = resolved["guardrails"]
@@ -255,4 +307,7 @@ def derive(resolved, root):
         "authorized_model_ids": authorized_model_ids(resolved, root),
         "scca_required": scca_required(resolved),
         "aurora": resolved.get("vector_store") == "aurora-postgresql",
+        "token_model_enforce": token_model_enforce(resolved),
+        "token_breaker": {"source": TOKEN_BREAKER_SOURCE, "detail_type": TOKEN_BREAKER_DETAIL_TYPE,
+                          "denied_actions": TOKEN_BREAKER_DENIED_ACTIONS, "asl": token_breaker_asl()},
     }

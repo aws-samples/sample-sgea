@@ -61,7 +61,7 @@ Related: [key and secret management](key-and-secret-management.md), [incident re
 
 1. **Offboard tenants.** Destroy each tenant stack (runtimes, gateway targets, Cedar policies, tool Lambdas, their
    policies attached to `sgea-<env>-agentcore-gateway`). AgentCore runtime deletion can report `NotStabilized` once;
-   wait and retry. Remove tenant IdP app clients.
+   wait and retry. Remove tenant IdP app clients. A tenant role that still has `sgea-<env>-token-budget-exhausted` attached (an active token breaker, ADR 0003) blocks the deletion of that enclave policy in step 7 (`DeleteConflict`): check with `aws iam list-entities-for-policy --policy-arn arn:<partition>:iam::<account>:policy/sgea-<env>-token-budget-exhausted` and detach it from any role you keep.
 2. **Collect final evidence** (section 2 step 4) if not done.
 3. **Token vault.** If the account's AgentCore token vault uses the enclave CMK
    (`get-token-vault` → `kmsConfiguration.keyType = CustomerManagedKey` with the enclave key), set it back to the

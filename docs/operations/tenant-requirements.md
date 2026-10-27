@@ -12,7 +12,7 @@ What an application team's agent must do to run in an SGEA enclave, how each req
 |---|---|
 | **Enclave** | Enforced by the enclave itself (SCP, account-enforced guardrail, gateway default-deny, runtime authorizer); a violation fails at run time |
 | **Config** | Evaluated by an AWS Config conformance-pack rule on your resources after deploy |
-| **E2E** | Covered by one of the 7 end-to-end checks (`examples/sample-agent/scripts/e2e_test.py`, adapted to your agent) |
+| **E2E** | Covered by one of the 9 end-to-end checks (`examples/sample-agent/scripts/e2e_test.py`, adapted to your agent) |
 | **Review** | Not detectable automatically; check in code review against this page |
 
 ## Requirements
@@ -38,12 +38,13 @@ What an application team's agent must do to run in an SGEA enclave, how each req
 | TR-17 | MUST | Never log prompts, answers, tool arguments, tokens or JWTs; log outcomes (status, stop reason, blocked / denied, sizes) only | Review |
 | TR-18 | MUST | Use enclave memory with your own `actorId` / `sessionId` scheme; memory is shared and untagged, so separation from other tenants rests on your ids and IAM scoping | Review |
 | TR-19 | MUST | Tag every resource and role `sgea:tenant = <tenant>` and `sgea:profile = <profile-id>` (exact, lowercase keys — the tenant-isolation SCP compares them) | Review (tag report) |
-| TR-20 | MUST | Pass the 7 end-to-end checks in non-production, and add no new NON_COMPLIANT tenant resources beyond accepted deviations in the conformance packs | E2E, Config |
+| TR-20 | MUST | Pass the 9 end-to-end checks in non-production, and add no new NON_COMPLIANT tenant resources beyond accepted deviations in the conformance packs | E2E, Config |
 | TR-21 | SHOULD | Retry throttled calls (`ThrottlingException`, HTTP 429) with exponential backoff and jitter; do not retry guardrail or policy denials | Review |
 | TR-22 | SHOULD | Tell the user clearly when their token budget is exhausted (tool calls denied with a token-budget reason) instead of failing silently | Review |
 | TR-23 | MUST | Instrument the agent with OpenTelemetry through AWS Distro for OpenTelemetry (ADOT) auto-instrumentation (startup line per language below), with `service.name` set to your agent; do not use the AWS X-Ray SDKs, which are in maintenance mode with end of support before February 25, 2027 | Review (spans visible in CloudWatch Transaction Search / GenAI observability) |
 | TR-24 | MUST | Keep prompt and response content out of spans: leave generative-AI message-content capture off (`OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=false`) and add no prompt, answer, argument or token attributes to custom spans (TR-17 applies to traces too) | Review |
 | TR-25 | SHOULD | Propagate trace context on outbound calls, including gateway calls (ADOT's HTTP instrumentation adds the `traceparent` / `X-Amzn-Trace-Id` headers; add them yourself if you instrument manually), so a request can be followed from the runtime through the gateway to the tool Lambda | Review |
+| TR-26 | MUST | Tag each runtime execution role `sgea:team` = the one team whose users it serves (the value your JWT team claim carries), and do not detach the enclave policy `sgea-<env>-token-budget-exhausted` yourself: once that team reaches its monthly token budget, the enclave breaker (ADR 0003) attaches it and the role's model calls are denied until month rollover or a raised budget. A role shared by several teams cannot be tagged and is bounded only by the gateway (tool calls). Exclude the enclave's attachment from exclusive policy management in your IaC (for example `aws_iam_role_policy_attachments_exclusive`), or your next apply lifts the denial until the next heartbeat re-attaches it | Enclave (breaker), E2E (over-budget team denied, then released) |
 
 ## Interface: what the enclave gives your agent
 
@@ -69,6 +70,7 @@ Enclave outputs for your infrastructure (Terraform `terraform output -json encla
 | `memory_id` | Memory (TR-18) |
 | `guardrail_id`, `guardrail_version`, `authorized_model_ids` | Model and guardrail (TR-04, TR-06) |
 | `env`, `profile`, `region` | Naming and the `sgea:profile` tag (TR-19) |
+| `token_per_user_daily`, `token_per_team_monthly`, `token_budget_exhausted_policy_arn` | Budgets your users and team are held to; the deny policy the breaker attaches to your `sgea:team`-tagged role (TR-07, TR-26) |
 | VPC endpoint ids | Not in the root `enclave` output: take the `bedrock-agentcore` endpoint id(s) from the `enclave-network` module output `endpoint_ids` (TR-14) |
 
 ## Code
@@ -771,5 +773,6 @@ Tick each before go-live; the [onboarding checklist](tenant-onboarding.md#6-onbo
 | TR-09–TR-12 | Tools only through the gateway; caller headers or bearer token; one Cedar policy per tool; denials handled | [ ] |
 | TR-13–TR-16 | Lambda, runtime, image and log-group settings; Config shows them compliant | [ ] |
 | TR-17–TR-19 | No content in logs; memory ids scheme; tags on every resource and role | [ ] |
-| TR-20 | 7 e2e checks pass in non-production; no new NON_COMPLIANT tenant resources | [ ] |
+| TR-20 | 9 e2e checks pass in non-production; no new NON_COMPLIANT tenant resources | [ ] |
+| TR-26 | Runtime role tagged `sgea:team` (one team per role); IaC does not detach `sgea-<env>-token-budget-exhausted` | [ ] |
 | TR-23–TR-25 | Agent starts under ADOT with `service.name`; message-content capture off; spans visible in Transaction Search | [ ] |

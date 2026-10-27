@@ -35,7 +35,8 @@ try:
     from .derived import (cw_retention, data_event_types, endpoint_services, backup_policy,
                           pack_resource_name, replica_region, policy_engine_available,
                           authorized_model_ids, scca_required, account_baseline, pack_template,
-                          log_retention_days)
+                          log_retention_days, token_model_enforce, token_breaker_asl,
+                          TOKEN_BREAKER_SOURCE, TOKEN_BREAKER_DETAIL_TYPE, TOKEN_BREAKER_DENIED_ACTIONS)
 except ImportError:  # in-repo fallback import (sgea._load_emitters)
     from license_header import with_header
     from guardrail_map import PII_ENTITIES, PHI_ENTITIES, CONTEXTUAL_ENTITIES, INPUT_ONLY_FILTERS, FILTER_ORDER
@@ -43,7 +44,8 @@ except ImportError:  # in-repo fallback import (sgea._load_emitters)
     from derived import (cw_retention, data_event_types, endpoint_services, backup_policy,
                          pack_resource_name, replica_region, policy_engine_available,
                          authorized_model_ids, scca_required, account_baseline, pack_template,
-                         log_retention_days)
+                         log_retention_days, token_model_enforce, token_breaker_asl,
+                          TOKEN_BREAKER_SOURCE, TOKEN_BREAKER_DETAIL_TYPE, TOKEN_BREAKER_DENIED_ACTIONS)
 
 SEAM_OFFICIAL = "official-passthrough"
 SEAM_RAW = "raw-governance-adapter"
@@ -2469,6 +2471,10 @@ def _mod_token_control(partition):
         '  type        = bool\n'
         '  default     = false\n}\n'
         'variable "invocation_log_group_name" {\n  type    = string\n  default = null\n}\n'
+        'variable "model_enforce" {\n'
+        '  description = "ADR 0003: deny model calls of runtime roles tagged sgea:team once that team\'s monthly tokens reach its budget."\n'
+        '  type        = bool\n'
+        '  default     = false\n}\n'
         'variable "lambda_subnet_ids" {\n  type    = list(string)\n  default = []\n}\n'
         'variable "lambda_security_group_ids" {\n  type    = list(string)\n  default = []\n}\n'
         'variable "cloudwatch_retention_days" { type = number }\n'
@@ -2534,6 +2540,8 @@ variable "reserved_concurrency" {
         '  environment_variables = {\n'
         '    TOKEN_LEDGER_TABLE = module.usage_ledger.dynamodb_table_id\n'
         '    TOKEN_TIMEZONE     = try(var.token_control.default_timezone, "UTC")\n'
+        '    PER_TEAM_MONTHLY_TOKENS = tostring(try(var.token_control.per_team_monthly_tokens, 0))\n'
+        '    TOKEN_BREAKER      = var.model_enforce ? "1" : "0"\n'
         '  }\n'
         '  tracing_mode                      = "Active"\n'
         '  vpc_subnet_ids                    = length(var.lambda_subnet_ids) > 0 ? var.lambda_subnet_ids : null # lambda-inside-vpc\n'
@@ -2612,11 +2620,16 @@ variable "reserved_concurrency" {
         '  name  = "sgea-${var.env}-token-meter-function"\n'
         '  policy = jsonencode({\n'
         '    Version = "2012-10-17"\n'
-        '    Statement = [\n'
-        '      { Sid = "TokenLedger", Effect = "Allow", Action = ["dynamodb:UpdateItem", "dynamodb:PutItem"], Resource = module.usage_ledger.dynamodb_table_arn },\n'
+        '    Statement = concat([\n'
+        '      { Sid = "TokenLedger", Effect = "Allow", Action = ["dynamodb:UpdateItem", "dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:Query", "dynamodb:DeleteItem"], Resource = module.usage_ledger.dynamodb_table_arn },\n'
         '      { Sid = "EnclaveKey", Effect = "Allow", Action = ["kms:Decrypt", "kms:GenerateDataKey"], Resource = var.kms_key_arn },\n'
         '      { Sid = "DeadLetter", Effect = "Allow", Action = "sqs:SendMessage", Resource = aws_sqs_queue.meter_dlq[0].arn },\n'
-        '    ]\n'
+        '      ], var.model_enforce ? [\n'
+        '      # ADR 0003: breaker requests go to the default bus under the meter\'s own source only.\n'
+        '      { Sid = "BreakerEvents", Effect = "Allow", Action = "events:PutEvents",\n'
+        '        Resource = "arn:${data.aws_partition.this.partition}:events:${data.aws_region.this.region}:${data.aws_caller_identity.this.account_id}:event-bus/default",\n'
+        '      Condition = { StringEquals = { "events:source" = "' + TOKEN_BREAKER_SOURCE + '" } } },\n'
+        '    ] : [])\n'
         '  })\n'
         '  tags = var.tags\n'
         '}\n\n'
@@ -2638,8 +2651,12 @@ variable "reserved_concurrency" {
         '  count = var.meter ? 1 : 0\n'
         '  rule  = aws_cloudwatch_event_rule.heartbeat[0].name\n'
         '  arn   = module.meter.lambda_function_arn\n'
-        '}\n')
+        '}\n' + _token_breaker_tf())
     outputs = ('output "usage_ledger_table_name" { value = module.usage_ledger.dynamodb_table_id }\n'
+               'output "budget_exhausted_policy_arn" {\n'
+               '  description = "ADR 0003 deny policy the breaker attaches to exhausted teams\' runtime roles (null when off)."\n'
+               '  value       = one(aws_iam_policy.budget_exhausted[*].arn)\n'
+               '}\n'
                'output "usage_ledger_table_arn" { value = module.usage_ledger.dynamodb_table_arn }\n'
                'output "meter_function_name" { value = module.meter.lambda_function_name }\n'
                'output "fail_closed_hours" { value = try(var.token_control.fail_closed_hours, 4) }\n')
@@ -2650,7 +2667,165 @@ variable "reserved_concurrency" {
               "The enforcement Lambda and the client library ship with the enclave package; keeping "
               "them behind this wrapper means a future official module is a one-file swap.\n")
     return {"versions.tf": _versions_tf(partition, False), "variables.tf": variables,
-            "main.tf": main, "outputs.tf": outputs, "README.md": readme}
+            "main.tf": main, "outputs.tf": outputs, "README.md": readme, "breaker.asl.json": token_breaker_asl()}
+
+
+def _token_breaker_tf():
+    """ADR 0003: model-call breaker. The in-VPC meter cannot reach IAM, so it raises an EventBridge event;
+    a Step Functions state machine (no Lambda) attaches / detaches one static deny policy, only on what
+    the ledger records and only on roles tagged sgea:team = the exhausted team."""
+    actions = json.dumps(TOKEN_BREAKER_DENIED_ACTIONS)
+    return """
+# ----- ADR 0003: model-call breaker (count = meter && model_enforce) -----
+locals {
+  breaker        = var.meter && var.model_enforce
+  breaker_policy = "arn:${data.aws_partition.this.partition}:iam::${data.aws_caller_identity.this.account_id}:policy/sgea-${var.env}-token-budget-exhausted"
+}
+
+resource "aws_iam_policy" "budget_exhausted" {
+  count       = local.breaker ? 1 : 0
+  name        = "sgea-${var.env}-token-budget-exhausted"
+  description = "SGEA ADR 0003: attached by the token breaker to runtime roles of a team past its monthly token budget."
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [{ Sid = "TeamTokenBudgetExhausted", Effect = "Deny", Action = %(actions)s, Resource = "*" }]
+  })
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_log_group" "breaker" {
+  count             = local.breaker ? 1 : 0
+  name              = "/aws/vendedlogs/states/sgea-${var.env}-token-breaker"
+  retention_in_days = var.cloudwatch_retention_days
+  kms_key_id        = var.kms_key_arn
+  tags              = var.tags
+}
+
+resource "aws_iam_role" "breaker" {
+  count = local.breaker ? 1 : 0
+  name  = "sgea-${var.env}-token-breaker"
+  assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{
+    Effect = "Allow", Principal = { Service = "states.amazonaws.com" }, Action = "sts:AssumeRole"
+    Condition = { StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.this.account_id },
+      ArnLike = { "aws:SourceArn" = "arn:${data.aws_partition.this.partition}:states:${data.aws_region.this.region}:${data.aws_caller_identity.this.account_id}:stateMachine:sgea-${var.env}-token-breaker" } }
+  }] })
+  tags = var.tags
+}
+
+# Least privilege: attach / detach ONLY the deny policy, attach ONLY to roles that carry sgea:team (the
+# state machine also checks the tag value); never the break-glass role. Logs / X-Ray delivery are
+# account-level APIs (Step Functions documentation: no resource-level scoping).
+resource "aws_iam_policy" "breaker" {
+  count = local.breaker ? 1 : 0
+  name  = "sgea-${var.env}-token-breaker"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      { Sid = "ReadTrips", Effect = "Allow", Action = "dynamodb:GetItem", Resource = module.usage_ledger.dynamodb_table_arn },
+      { Sid = "LedgerKey", Effect = "Allow", Action = "kms:Decrypt", Resource = var.kms_key_arn },
+      { Sid = "ReadRoleTags", Effect = "Allow", Action = "iam:GetRole", Resource = "arn:${data.aws_partition.this.partition}:iam::${data.aws_caller_identity.this.account_id}:role/*" },
+      { Sid = "AttachDenyToTeamRoles", Effect = "Allow", Action = "iam:AttachRolePolicy",
+        Resource  = "arn:${data.aws_partition.this.partition}:iam::${data.aws_caller_identity.this.account_id}:role/*",
+      Condition = { ArnEquals = { "iam:PolicyARN" = local.breaker_policy }, Null = { "aws:ResourceTag/sgea:team" = "false" } } },
+      { Sid = "DetachDeny", Effect = "Allow", Action = "iam:DetachRolePolicy",
+        Resource  = "arn:${data.aws_partition.this.partition}:iam::${data.aws_caller_identity.this.account_id}:role/*",
+      Condition = { ArnEquals = { "iam:PolicyARN" = local.breaker_policy } } },
+      { Sid = "NeverBreakGlass", Effect = "Deny", Action = ["iam:AttachRolePolicy", "iam:DetachRolePolicy"],
+      Resource = "arn:${data.aws_partition.this.partition}:iam::${data.aws_caller_identity.this.account_id}:role/sgea-*-break-glass" },
+      { Sid = "LogDelivery", Effect = "Allow", Action = ["logs:CreateLogDelivery", "logs:GetLogDelivery", "logs:UpdateLogDelivery",
+        "logs:DeleteLogDelivery", "logs:ListLogDeliveries", "logs:PutResourcePolicy", "logs:DescribeResourcePolicies",
+      "logs:DescribeLogGroups"], Resource = "*" },
+      { Sid = "Tracing", Effect = "Allow", Action = ["xray:PutTraceSegments", "xray:PutTelemetryRecords", "xray:GetSamplingRules",
+      "xray:GetSamplingTargets"], Resource = "*" },
+    ]
+  })
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "breaker" {
+  count      = local.breaker ? 1 : 0
+  role       = aws_iam_role.breaker[0].name
+  policy_arn = aws_iam_policy.breaker[0].arn
+}
+
+resource "aws_sfn_state_machine" "breaker" {
+  count    = local.breaker ? 1 : 0
+  name     = "sgea-${var.env}-token-breaker"
+  role_arn = aws_iam_role.breaker[0].arn
+  definition = templatefile("${path.module}/breaker.asl.json", {
+    partition    = data.aws_partition.this.partition
+    policy_arn   = aws_iam_policy.budget_exhausted[0].arn
+    ledger_table = module.usage_ledger.dynamodb_table_id
+  })
+  logging_configuration {
+    log_destination        = "${aws_cloudwatch_log_group.breaker[0].arn}:*"
+    include_execution_data = false # role and team names only, but keep execution data out of logs
+    level                  = "ERROR"
+  }
+  tracing_configuration { enabled = true }
+  tags       = var.tags
+  depends_on = [aws_iam_role_policy_attachment.breaker]
+}
+
+resource "aws_cloudwatch_event_rule" "breaker" {
+  count         = local.breaker ? 1 : 0
+  name          = "sgea-${var.env}-token-breaker"
+  description   = "SGEA ADR 0003: token meter breaker requests -> sgea-${var.env}-token-breaker"
+  event_pattern = jsonencode({ source = ["%(source)s"], "detail-type" = ["%(detail)s"] })
+  tags          = var.tags
+}
+
+resource "aws_iam_role" "breaker_events" {
+  count = local.breaker ? 1 : 0
+  name  = "sgea-${var.env}-token-breaker-events"
+  assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{
+    Effect = "Allow", Principal = { Service = "events.amazonaws.com" }, Action = "sts:AssumeRole"
+    Condition = { StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.this.account_id },
+    ArnEquals = { "aws:SourceArn" = aws_cloudwatch_event_rule.breaker[0].arn } }
+  }] })
+  tags = var.tags
+}
+
+resource "aws_iam_policy" "breaker_events" {
+  count = local.breaker ? 1 : 0
+  name  = "sgea-${var.env}-token-breaker-events"
+  policy = jsonencode({ Version = "2012-10-17", Statement = [{
+    Sid = "StartBreaker", Effect = "Allow", Action = "states:StartExecution", Resource = aws_sfn_state_machine.breaker[0].arn
+  }] })
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "breaker_events" {
+  count      = local.breaker ? 1 : 0
+  role       = aws_iam_role.breaker_events[0].name
+  policy_arn = aws_iam_policy.breaker_events[0].arn
+}
+
+resource "aws_cloudwatch_event_target" "breaker" {
+  count    = local.breaker ? 1 : 0
+  rule     = aws_cloudwatch_event_rule.breaker[0].name
+  arn      = aws_sfn_state_machine.breaker[0].arn
+  role_arn = aws_iam_role.breaker_events[0].arn
+}
+
+resource "aws_cloudwatch_metric_alarm" "breaker_failures" {
+  count                     = local.breaker && var.alarms ? 1 : 0
+  alarm_name                = "sgea-${var.env}-token-breaker-failures"
+  alarm_description         = "SGEA token breaker (ADR 0003) failed: an exhausted team's model calls may not be denied, or a release may be stuck."
+  namespace                 = "AWS/States"
+  metric_name               = "ExecutionsFailed"
+  dimensions                = { StateMachineArn = aws_sfn_state_machine.breaker[0].arn }
+  statistic                 = "Sum"
+  period                    = 300
+  evaluation_periods        = 1
+  threshold                 = 1
+  comparison_operator       = "GreaterThanOrEqualToThreshold"
+  treat_missing_data        = "notBreaching"
+  alarm_actions             = [var.alarm_topic_arn]
+  insufficient_data_actions = var.alarm_insufficient_data_action ? [var.alarm_topic_arn] : []
+  tags                      = var.tags
+}
+""" % {"actions": actions.replace('"', '"'), "source": TOKEN_BREAKER_SOURCE, "detail": TOKEN_BREAKER_DETAIL_TYPE}
 
 
 # -------------------- enclave monitoring (ADR 0002) --------------------
@@ -3469,6 +3644,7 @@ def emit(resolved, prof, outdir, root=None):
         '  kms_key_arn   = local.kms_key_arn\n'
         '  meter         = ' + ("true" if resolved["token_control"].get("enabled") and resolved["logging"].get("model_invocation_logging") else "false") + '\n'
         '  invocation_log_group_name = module.enclave_logging.invocation_log_group\n'
+        '  model_enforce             = ' + ("true" if token_model_enforce(resolved) else "false") + ' # ADR 0003 model-call breaker\n'
         '  lambda_subnet_ids         = var.agent_subnet_ids\n'
         '  lambda_security_group_ids = var.agent_security_group_ids\n'
         '  cloudwatch_retention_days = ' + str(log_retention_days(resolved, root)) + '\n'
@@ -3547,6 +3723,9 @@ def emit(resolved, prof, outdir, root=None):
         '    log_retention_days   = ' + str(log_retention_days(resolved, root)) + '\n'
         '    token_timezone       = "' + resolved["token_control"].get("default_timezone", "UTC") + '"\n'
         '    token_per_user_daily = ' + str(resolved["token_control"].get("per_user_daily_tokens", 0)) + '\n'
+        '    token_per_team_monthly = ' + str(resolved["token_control"].get("per_team_monthly_tokens", 0)) + '\n'
+        '    token_budget_exhausted_policy_arn = module.token_control.budget_exhausted_policy_arn\n'
+        '    token_meter_function = module.token_control.meter_function_name\n'
         '    authorized_model_ids = ' + json.dumps(authorized_model_ids(resolved, root) or []) + '\n'
         '    inference_profile_geo = "' + resolved["regions"]["inference_profile_geo"] + '"\n'
         + ('    gateway_id           = module.agentcore_platform.gateway_id\n'

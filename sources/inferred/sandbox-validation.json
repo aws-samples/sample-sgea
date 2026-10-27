@@ -79,10 +79,10 @@
         "hipaa",
         "hitrust"
       ],
-      "collected_at": "2026-10-27 03:18 UTC",
-      "observed": 197,
-      "checked": 101,
-      "meets": 99
+      "collected_at": "2026-10-27 14:44 UTC",
+      "observed": 186,
+      "checked": 103,
+      "meets": 100
     },
     {
       "profile": "fedramp-moderate-hipaa-hitrust-commercial",
@@ -92,10 +92,10 @@
         "hipaa",
         "hitrust"
       ],
-      "collected_at": "2026-10-27 02:20 UTC",
-      "observed": 178,
-      "checked": 98,
-      "meets": 96
+      "collected_at": "2026-10-27 15:43 UTC",
+      "observed": 183,
+      "checked": 99,
+      "meets": 97
     },
     {
       "profile": "fedramp-moderate-part11-commercial",

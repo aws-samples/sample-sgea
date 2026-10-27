@@ -84,7 +84,14 @@ def run(prompt, session_id, who=(None, None)):
             kwargs["requestMetadata"] = meta  # lands in the invocation log -> enclave token meter
         if tools:
             kwargs["toolConfig"] = tools
-        out = runtime.converse(**kwargs)
+        try:
+            out = runtime.converse(**kwargs)
+        except runtime.exceptions.AccessDeniedException:
+            # The enclave token breaker (ADR 0003) denies model calls once this team's monthly budget is spent:
+            # tell the caller instead of failing the request (TR-12 handles tool denials the same way).
+            trace["model_denied"] = True
+            answer = "Model call denied by the enclave (team token budget exhausted)."
+            break
         trace["stop_reason"] = out["stopReason"]
         msg = out["output"]["message"]
         messages.append(msg)
@@ -161,7 +168,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(500, {"error": type(e).__name__, "message": str(e)[:500]})
 
     def log_message(self, fmt, *args):  # one line per request to stdout -> CloudWatch
-        print(json.dumps({"path": self.path, "status": args[1] if len(args) > 1 else None}))
+        # getattr: a malformed request fails before the request line (and self.path) is parsed
+        print(json.dumps({"path": getattr(self, "path", None), "status": args[1] if len(args) > 1 else None}))
 
 
 if __name__ == "__main__":

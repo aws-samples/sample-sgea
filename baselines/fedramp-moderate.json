@@ -29,7 +29,7 @@
     "cloudtrail_data_events": ["bedrock", "s3-enclave-buckets"]
   },
   "services": {
-    "allow": ["bedrock", "bedrock-agentcore", "aurora-postgresql", "kms", "cloudwatch", "cloudtrail", "s3", "lambda", "dynamodb", "sns", "eventbridge", "firehose", "cognito", "elasticache"],
+    "allow": ["bedrock", "bedrock-agentcore", "aurora-postgresql", "kms", "cloudwatch", "cloudtrail", "s3", "lambda", "dynamodb", "sns", "eventbridge", "firehose", "cognito", "elasticache", "stepfunctions"],
     "hipaa_eligible_only": false
   },
   "evidence": {

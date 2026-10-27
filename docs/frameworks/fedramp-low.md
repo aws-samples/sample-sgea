@@ -62,7 +62,7 @@ SGEA's own Bedrock / AgentCore controls (`sources/inferred/service-controls.yaml
 
 | Service | SGEA controls | Conditional |
 |---|---:|---:|
-| bedrock | 11 | 6 |
+| bedrock | 12 | 7 |
 | bedrock-agentcore | 27 | 3 |
 | dod-scca | 5 | 5 |
 

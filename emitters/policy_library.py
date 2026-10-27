@@ -33,7 +33,7 @@ SERVICE_PREFIXES = {
     "cloudwatch": ["cloudwatch", "logs"], "cloudtrail": ["cloudtrail"], "s3": ["s3"],
     "lambda": ["lambda"], "dynamodb": ["dynamodb"], "sns": ["sns"], "eventbridge": ["events", "scheduler"],
     "firehose": ["firehose"], "cognito": ["cognito-idp", "cognito-identity"],
-    "elasticache": ["elasticache"],
+    "elasticache": ["elasticache"], "stepfunctions": ["states"],
 }
 # Always-needed control-plane / security services (identity, networking, detective controls).
 FOUNDATION_PREFIXES = [

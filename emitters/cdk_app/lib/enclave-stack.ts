@@ -64,7 +64,8 @@ export class EnclaveStack extends Stack {
     // Org SCP/RCPs need the Organizations management (or delegated) account: -c sgea:deployOrgPolicies=false for sandboxes.
     const governance = new Governance(this, 'Governance', { bundles: i.deployOrgPolicies ? d.policy_bundles : [], inputs: i, key,
       tokenControl: cfg.token_control, invocationLogGroup: cfg.logging.model_invocation_logging ? logging.invocationLogGroup : undefined,
-      cloudwatchRetentionDays: d.cloudwatch_retention_days, ...alarms, reservedConcurrency: ab.lambda_reserved_concurrency ?? 20 });
+      cloudwatchRetentionDays: d.cloudwatch_retention_days, ...alarms, reservedConcurrency: ab.lambda_reserved_concurrency ?? 20,
+      modelEnforce: !!d.token_model_enforce, breaker: d.token_breaker });
 
     // The gateway interceptor fails closed until the meter has written a heartbeat: invoke it once at
     // deploy, after the network (its VPC path to DynamoDB), instead of waiting for the 15-minute schedule.
@@ -122,6 +123,9 @@ export class EnclaveStack extends Stack {
       authorized_model_ids: d.authorized_model_ids ?? [], inference_profile_geo: cfg.regions.inference_profile_geo,
       token_ledger_table: governance.ledger.tableName, log_retention_days: d.cloudwatch_retention_days, token_timezone: cfg.token_control?.default_timezone ?? 'UTC',
       token_per_user_daily: cfg.token_control?.per_user_daily_tokens ?? 0,
+      token_per_team_monthly: cfg.token_control?.per_team_monthly_tokens ?? 0,
+      token_budget_exhausted_policy_arn: governance.budgetExhaustedPolicyArn ?? null,
+      token_meter_function: governance.meter?.functionName ?? null,
       ...(platform ? platform.outputs : {}), vpc_id: i.vpcId ?? null }) });
   }
 }
