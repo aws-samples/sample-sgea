@@ -72,7 +72,8 @@ ENDPOINT_SERVICES = {
     "aurora-postgresql": ["rds", "rds-data"], "elasticache": ["elasticache"], "cognito": ["cognito-idp"],
     "cloudtrail": [],
 }
-FOUNDATION_ENDPOINTS = ["sts", "secretsmanager", "ecr.api", "ecr.dkr", "ssm"]
+FOUNDATION_ENDPOINTS = ["sts", "secretsmanager", "ecr.api", "ecr.dkr", "ssm",
+                        "xray"]   # OpenTelemetry (ADOT) spans from the VPC-only runtime and Lambdas to X-Ray / Transaction Search
 
 
 def endpoint_services(resolved):

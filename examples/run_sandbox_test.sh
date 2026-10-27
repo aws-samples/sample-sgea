@@ -56,8 +56,8 @@ python3 sgea.py export --profile "$PROFILE" --out build/ --allow-unverified
 # Preflight: manual steps that need an AWS request (MANUAL-STEPS.md section 1). Fail before creating anything.
 NEED=$(python3 -c "
 import sys; sys.path.insert(0, 'emitters'); import sgea, derived, manual_steps
-r, _ = sgea.resolve('$PROFILE'); ab = derived.account_baseline(r, '.'); fns = manual_steps.enclave_functions(r)
-print(len(fns) * ab['lambda_reserved_concurrency'] + manual_steps.LAMBDA_UNRESERVED_MIN if ab['lambda_reserved_concurrency'] and fns else 0)")
+r, _ = sgea.resolve('$PROFILE'); q = manual_steps.lambda_quota_need(r, '.')
+print(q[0] if q else 0)")
 if [[ "$NEED" -gt 0 ]]; then
   HAVE=$(aws service-quotas get-service-quota --service-code lambda --quota-code L-B99A9384 --query 'Quota.Value' --output text 2>/dev/null || echo 0)
   if python3 -c "import sys; sys.exit(0 if float('$HAVE') >= $NEED else 1)"; then

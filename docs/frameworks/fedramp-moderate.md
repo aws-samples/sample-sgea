@@ -23,7 +23,7 @@ Baseline validation status: **Sandbox-validated (Terraform, CDK)**.
 | `dod-il5.govcloud` | dod-il5 | settings inherited only (pack not deployed) | aws-us-gov | us-gov-west-1; us-gov-west-1, us-gov-east-1 | not deployed (scaffold) | not deployed (scaffold) |
 | `fedramp-high.govcloud` | fedramp-high | settings inherited only (pack not deployed) | aws-us-gov | us-gov-west-1; us-gov-west-1, us-gov-east-1 | not deployed (scaffold) | not deployed (scaffold) |
 | `fedramp-moderate-hipaa.commercial` | fedramp-moderate + hipaa | composed: pack deployed, rules checked | aws | us-east-1; us-east-1, us-east-2, us-west-2 | sandbox-validated (2026-10-16) | sandbox-validated (2026-10-16) |
-| `fedramp-moderate-hitrust.commercial` | fedramp-moderate + hipaa + hitrust | composed: pack deployed, rules checked | aws | us-east-1; us-east-1, us-east-2, us-west-2 | sandbox-validated (2026-10-21) | sandbox-validated (2026-10-21) |
+| `fedramp-moderate-hitrust.commercial` | fedramp-moderate + hipaa + hitrust | composed: pack deployed, rules checked | aws | us-east-1; us-east-1, us-east-2, us-west-2 | sandbox-validated (2026-10-27) | sandbox-validated (2026-10-27) |
 | `fedramp-moderate-part11.commercial` | fedramp-moderate + fda-21-cfr-part-11 | composed: pack deployed, rules checked | aws | us-east-1; us-east-1, us-east-2, us-west-2 | sandbox-validated (2026-10-16) | sandbox-validated (2026-10-16) |
 
 ## Control coverage
@@ -141,8 +141,8 @@ Sandbox deployments of profiles composing this baseline, with the as-deployed co
 | dod-il2-commercial | Terraform | 2026-10-16 08:39 UTC | 152 | 78 | 77 |
 | fedramp-moderate-hipaa-commercial | CDK | 2026-10-16 15:29 UTC | 159 | 80 | 79 |
 | fedramp-moderate-hipaa-commercial | Terraform | 2026-10-16 03:35 UTC | 152 | 79 | 77 |
-| fedramp-moderate-hipaa-hitrust-commercial | CDK | 2026-10-21 20:24 UTC | 163 | 74 | 72 |
-| fedramp-moderate-hipaa-hitrust-commercial | Terraform | 2026-10-21 22:35 UTC | 145 | 72 | 70 |
+| fedramp-moderate-hipaa-hitrust-commercial | CDK | 2026-10-27 03:18 UTC | 197 | 101 | 99 |
+| fedramp-moderate-hipaa-hitrust-commercial | Terraform | 2026-10-27 02:20 UTC | 178 | 98 | 96 |
 | fedramp-moderate-part11-commercial | CDK | 2026-10-16 22:06 UTC | 159 | 80 | 79 |
 | fedramp-moderate-part11-commercial | Terraform | 2026-10-16 19:19 UTC | 203 | 79 | 77 |
 

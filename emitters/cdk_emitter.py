@@ -24,6 +24,18 @@ except ImportError:  # in-repo fallback import (sgea._load_emitters)
     from derived import derive, pack_template
     from license_header import with_header
 
+# ADR 0002 enclave-monitoring toggles and their defaults (read by lib/constructs/context.ts).
+MONITORING_CONTEXT = {
+    "sgea:manageMonitoring": True,
+    "sgea:createAccessAnalyzer": True,
+    "sgea:createUnusedAccessAnalyzer": False,
+    "sgea:manageTransactionSearch": True,
+    "sgea:monthlyBudgetUsd": 0,
+    "sgea:createCostAnomalyMonitor": False,
+    "sgea:createBreakGlassRole": False,
+    "sgea:breakGlassPrincipalArns": "",
+}
+
 APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cdk_app")
 
 
@@ -68,8 +80,8 @@ def emit(resolved, prof, outdir, root=None):
         "scripts": {"build": "tsc", "synth": "cdk synth", "deploy": "cdk deploy --all"},
         # Exact versions + the shipped package-lock.json (cdk_app/package-lock.json): `npm ci` installs the
         # same dependency tree every time (supply-chain pinning).
-        "devDependencies": {"aws-cdk": "2.1145.0", "typescript": "5.9.3", "ts-node": "10.9.2", "@types/node": "22.20.5"},
-        "dependencies": {"aws-cdk-lib": "2.273.0", "constructs": "10.8.1", "source-map-support": "0.5.21"},
+        "devDependencies": {"aws-cdk": "2.1146.1", "typescript": "7.0.2", "tsx": "4.23.15", "@types/node": "24.19.2"},
+        "dependencies": {"aws-cdk-lib": "2.275.0", "constructs": "10.8.1", "source-map-support": "0.5.21"},
     }
     written.append(_w(os.path.join(outdir, "package.json"), json.dumps(pkg, indent=2) + "\n"))
     lock_src = os.path.join(APP_DIR, "package-lock.json")
@@ -86,8 +98,10 @@ def emit(resolved, prof, outdir, root=None):
     written.append(_w(os.path.join(outdir, "tsconfig.json"), json.dumps(tsconfig, indent=2) + "\n"))
     # Official CDK feature flags: S3 server-access-log delivery by bucket policy (ACLs stay disabled).
     written.append(_w(os.path.join(outdir, "cdk.json"), json.dumps({
-        "app": "npx ts-node --prefer-ts-exts bin/app.ts",
-        "context": {"@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy": True},
+        "app": "npx tsx bin/app.ts",
+        "context": {"@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy": True,
+                    # ADR 0002 monitoring toggles (defaults; override with -c sgea:<key>=...).
+                    **MONITORING_CONTEXT},
     }, indent=2) + "\n"))
 
     readme = ("# SGEA CDK output — " + resolved["profile"]["name"] + "\n\n"

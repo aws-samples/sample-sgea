@@ -18,6 +18,7 @@ export interface PlatformProps { inputs: EnvInputs; key: kms.IKey; gatewayToolPa
 
 export class AgentCorePlatform extends Construct {
   public outputs: Record<string, string> = {};
+  public readonly gatewayArn: string;
   constructor(scope: Construct, id: string, props: PlatformProps) {
     super(scope, id);
     const i = props.inputs, acct = Aws.ACCOUNT_ID, part = Aws.PARTITION, region = Aws.REGION, key = props.key;
@@ -44,9 +45,14 @@ export class AgentCorePlatform extends Construct {
       physicalResourceId: cr.PhysicalResourceId.of(`sgea-${i.env}-token-vault-cmk`) };
     const vaultCr = new cr.AwsCustomResource(this, 'TokenVaultCmk', {
       resourceType: 'Custom::SgeaTokenVaultCmk', onCreate: vault, onUpdate: vault,
+      // cdk destroy: hand the vault back to the service-managed key, so the account stays usable once the CMK is gone.
+      onDelete: { service: vault.service, action: 'SetTokenVaultCMKCommand',
+        parameters: { kmsConfiguration: { keyType: 'ServiceManagedKey' } } },
       policy: cr.AwsCustomResourcePolicy.fromStatements([
         new iam.PolicyStatement({ actions: ['bedrock-agentcore:SetTokenVaultCMK', 'bedrock-agentcore:GetTokenVault'],
-          resources: [`arn:${part}:bedrock-agentcore:${region}:${acct}:token-vault/default`] }),   // the account's token vault only
+          // the account's token vault only; SetTokenVaultCMK is also authorized against the identities API path (sandbox 2026-10-26)
+          resources: [`arn:${part}:bedrock-agentcore:${region}:${acct}:token-vault/default`,
+            `arn:${part}:bedrock-agentcore:${region}:${acct}:/identities/set-token-vault-cmk`] }),
         // SetTokenVaultCMK uses the caller's own KMS permissions via bedrock-agentcore (CloudTrail, sandbox
         // 2026-10-15): Decrypt, DescribeKey, Encrypt (incl. a DryRun) and GenerateDataKeyWithoutPlaintext.
         new iam.PolicyStatement({ actions: ['kms:DescribeKey', 'kms:CreateGrant', 'kms:Decrypt', 'kms:Encrypt',
@@ -88,7 +94,7 @@ export class AgentCorePlatform extends Construct {
       const group = new logs.LogGroup(this, 'InterceptorLogs', { logGroupName: `/aws/lambda/${fname}`,
         retention: props.cloudwatchRetentionDays as logs.RetentionDays, encryptionKey: key, removalPolicy: RemovalPolicy.RETAIN });
       interceptor = new lambda.Function(this, 'ToolPolicyInterceptor', {
-        functionName: fname, runtime: lambda.Runtime.PYTHON_3_12, handler: 'tool_policy_interceptor.handler',
+        functionName: fname, runtime: new lambda.Runtime('python3.15', lambda.RuntimeFamily.PYTHON, { supportsInlineCode: true }), handler: 'tool_policy_interceptor.handler',
         code: lambda.Code.fromAsset(path.join(__dirname, '..', '..', 'lambda')), // > 4 KB: no inline ZipFile
         timeout: Duration.seconds(5), memorySize: 256, reservedConcurrentExecutions: props.reservedConcurrency ?? 100, // lambda-concurrency-check
         deadLetterQueue: new sqs.Queue(this, 'InterceptorDlq', { queueName: `${fname}-dlq`, encryption: sqs.QueueEncryption.KMS,
@@ -136,6 +142,7 @@ export class AgentCorePlatform extends Construct {
       name: `sgea_${i.env}_memory`, description: 'SGEA enclave agent memory', eventExpiryDuration: i.memoryEventExpiryDays,
       encryptionKeyArn: key.keyArn, memoryExecutionRoleArn: memRole.roleArn,
     });
+    this.gatewayArn = gateway.attrGatewayArn;
     this.outputs = { gateway_id: gateway.attrGatewayIdentifier, gateway_url: gateway.attrGatewayUrl,
       gateway_arn: gateway.attrGatewayArn, ...(engine ? { policy_engine_id: engine.attrPolicyEngineId } : {}),
       gateway_role_name: gwRole.roleName, memory_id: memory.attrMemoryId, agents_repository_url: repo.repositoryUri };

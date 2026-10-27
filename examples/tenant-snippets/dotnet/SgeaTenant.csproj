@@ -1,0 +1,20 @@
+<!-- Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: MIT-0 -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>Sgea.Tenant</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.Core" Version="4.0.102.14" />
+    <PackageReference Include="AWSSDK.BedrockRuntime" Version="4.0.101.14" />
+    <PackageReference Include="AWSSDK.BedrockAgentCore" Version="4.0.115.1" />
+  </ItemGroup>
+
+</Project>

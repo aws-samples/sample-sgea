@@ -483,6 +483,16 @@ module "kms" {
       principals = [{ type = "Service", identifiers = ["cloudwatch.amazonaws.com"] }]
       condition  = [{ test = "StringEquals", variable = "aws:SourceAccount", values = [local.account] }]
     },
+    {
+      # ADR 0002: EventBridge rules, AWS Budgets and Cost Anomaly Detection publish to the CMK-encrypted
+      # security-alarm topic.
+      sid        = "EventDeliveryToEncryptedSns"
+      actions    = ["kms:GenerateDataKey*", "kms:Decrypt"]
+      resources  = ["*"]
+      # AWS Budgets / Cost Anomaly Detection do not run in AWS GovCloud (US): named only in the commercial partition.
+      principals = [{ type = "Service", identifiers = local.arn == "aws-us-gov" ? ["events.amazonaws.com"] : ["events.amazonaws.com", "budgets.amazonaws.com", "costalerts.amazonaws.com"] }]
+      condition  = [{ test = "StringEquals", variable = "aws:SourceAccount", values = [local.account] }]
+    },
   ]
   tags = var.tags
 }
@@ -519,6 +529,16 @@ variable "data_event_resource_types" {
   description = "CloudTrail data-event resources.type values derived from logging.cloudtrail_data_events."
   type        = list(string)
   default     = []
+}
+variable "event_publishers" {
+  description = "ADR 0002 M1: EventBridge rules sgea-<env>-evt-* publish to the security-alarm topic (topic policy)."
+  type        = bool
+  default     = false
+}
+variable "cost_publishers" {
+  description = "ADR 0002 M4: AWS Budgets / Cost Anomaly Detection publish to the security-alarm topic (topic policy)."
+  type        = bool
+  default     = false
 }
 variable "tags" {
   type    = map(string)
@@ -774,6 +794,60 @@ resource "aws_sns_topic" "security_alarms" {
   tags              = var.tags
 }
 
+# ADR 0002: service publishers of the monitoring layer. Written only when the layer is on; it replaces
+# the default topic policy, so it keeps owner access and the CloudWatch-alarm publisher explicitly.
+resource "aws_sns_topic_policy" "security_alarms" {
+  count = var.event_publishers || var.cost_publishers ? 1 : 0
+  arn   = aws_sns_topic.security_alarms.arn
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat([
+      {
+        Sid       = "OwnerAccess"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:${local.arn}:iam::${local.account}:root" }
+        Action    = ["sns:GetTopicAttributes", "sns:SetTopicAttributes", "sns:AddPermission", "sns:RemovePermission", "sns:DeleteTopic", "sns:Subscribe", "sns:ListSubscriptionsByTopic", "sns:Publish"]
+        Resource  = aws_sns_topic.security_alarms.arn
+      },
+      {
+        Sid       = "CloudWatchAlarms"
+        Effect    = "Allow"
+        Principal = { Service = "cloudwatch.amazonaws.com" }
+        Action    = "sns:Publish"
+        Resource  = aws_sns_topic.security_alarms.arn
+        Condition = { StringEquals = { "aws:SourceAccount" = local.account } }
+      },
+      ], var.event_publishers ? [{
+        Sid       = "EventBridgeRules"
+        Effect    = "Allow"
+        Principal = { Service = "events.amazonaws.com" }
+        Action    = "sns:Publish"
+        Resource  = aws_sns_topic.security_alarms.arn
+        Condition = {
+          StringEquals = { "aws:SourceAccount" = local.account }
+          ArnLike      = { "aws:SourceArn" = "arn:${local.arn}:events:${local.region}:${local.account}:rule/sgea-${var.env}-evt-*" }
+        }
+      }] : [], var.cost_publishers ? [
+      {
+        Sid       = "Budgets"
+        Effect    = "Allow"
+        Principal = { Service = "budgets.amazonaws.com" }
+        Action    = "sns:Publish"
+        Resource  = aws_sns_topic.security_alarms.arn
+        Condition = { StringEquals = { "aws:SourceAccount" = local.account } }
+      },
+      {
+        Sid       = "CostAnomalyDetection"
+        Effect    = "Allow"
+        Principal = { Service = "costalerts.amazonaws.com" }
+        Action    = "sns:Publish"
+        Resource  = aws_sns_topic.security_alarms.arn
+        Condition = { StringEquals = { "aws:SourceAccount" = local.account } }
+      },
+    ] : [])
+  })
+}
+
 # ----- CloudWatch log groups (cw-loggroup-retention-period-check, cloudwatch-log-group-encrypted) -----
 module "log_group" {
   source   = "terraform-aws-modules/cloudwatch/aws//modules/log-group"
@@ -933,6 +1007,9 @@ resource "aws_cloudtrail" "this" {
                'output "config_bucket" { value = module.config_store.name }\n'
                'output "log_bucket_arn" { value = module.log_store.arn }\n'
                'output "alarm_topic_arn" { value = aws_sns_topic.security_alarms.arn }\n'
+               '# Same topic, available only once its publisher policy exists (Budgets validates it at create).\n'
+               'output "monitoring_topic_arn" {\n  value      = aws_sns_topic.security_alarms.arn\n  depends_on = [aws_sns_topic_policy.security_alarms]\n}\n'
+               'output "cloudtrail_log_group" { value = module.log_group["cloudtrail"].cloudwatch_log_group_name }\n'
                'output "config_bucket_arn" { value = module.config_store.arn }\n'
                'output "trail_arn" { value = aws_cloudtrail.this.arn }\n')
     versions = ("terraform {\n  required_version = \">= 1.11\"\n  required_providers {\n"
@@ -1317,6 +1394,9 @@ module "ecr" {
 }
 
 # ----- outbound credential store: SGEA-AC-ID-01 -----
+# Destroy is a no-op in hashicorp/aws (framework.WithNoOpDelete): `terraform destroy` leaves the
+# vault on this CMK. Before the key is scheduled for deletion, reset the vault to the service-managed
+# key (SetTokenVaultCMK keyType = ServiceManagedKey; OPERATIONS.md) or the account's token vault breaks.
 resource "aws_bedrockagentcore_token_vault_cmk" "this" {
   kms_configuration {
     key_type    = "CustomerManagedKey"
@@ -1413,7 +1493,7 @@ module "interceptor" {
   create  = local.interceptor
 
   function_name                     = local.interceptor_name
-  runtime                           = "python3.12"
+  runtime                           = "python3.15"
   handler                           = "tool_policy_interceptor.handler"
   create_package                    = false
   local_existing_package            = "${path.module}/tool_policy_interceptor.zip"
@@ -1790,7 +1870,7 @@ module "aurora" {
 
   name                                = "sgea-${var.env}-vector"
   engine                              = "aurora-postgresql"
-  engine_version                      = "16.9"
+  engine_version                      = "16.15"
   engine_mode                         = "provisioned"
   database_name                       = "sgea"
   master_username                     = "sgea_admin" # rds-instance-default-admin-check
@@ -2443,7 +2523,7 @@ variable "reserved_concurrency" {
         '  version = "8.12.0"\n'
         '  create  = var.meter\n\n'
         '  function_name                     = "sgea-${var.env}-token-meter"\n'
-        '  runtime                           = "python3.12"\n'
+        '  runtime                           = "python3.15"\n'
         '  handler                           = "token_meter.handler"\n'
         '  create_package                    = false\n'
         '  local_existing_package            = "${path.module}/token_meter.zip"\n'
@@ -2573,6 +2653,398 @@ variable "reserved_concurrency" {
             "main.tf": main, "outputs.tf": outputs, "README.md": readme}
 
 
+# -------------------- enclave monitoring (ADR 0002) --------------------
+# M2: CloudTrail metric filters (CIS-style). Literal CloudWatch Logs filter patterns, ADR 0002 table order.
+CT_FILTERS = [
+    ("unauthorized-api", '{ ($.errorCode = "*UnauthorizedOperation") || ($.errorCode = "AccessDenied*") }'),
+    ("console-no-mfa", '{ ($.eventName = "ConsoleLogin") && ($.additionalEventData.MFAUsed != "Yes") && ($.userIdentity.type = "IAMUser") && ($.responseElements.ConsoleLogin = "Success") }'),
+    ("root-usage", '{ $.userIdentity.type = "Root" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != "AwsServiceEvent" }'),
+    ("iam-policy-changes", '{ ($.eventSource = "iam.amazonaws.com") && (($.eventName = "Put*Policy") || ($.eventName = "Delete*Policy") || ($.eventName = "Create*Policy*") || ($.eventName = "Attach*Policy") || ($.eventName = "Detach*Policy")) }'),
+    ("cloudtrail-changes", '{ ($.eventName = "CreateTrail") || ($.eventName = "UpdateTrail") || ($.eventName = "DeleteTrail") || ($.eventName = "StartLogging") || ($.eventName = "StopLogging") || ($.eventName = "PutEventSelectors") }'),
+    ("console-auth-failures", '{ ($.eventName = "ConsoleLogin") && ($.errorMessage = "Failed authentication") }'),
+    ("kms-key-disable-or-delete", '{ ($.eventSource = "kms.amazonaws.com") && (($.eventName = "DisableKey") || ($.eventName = "ScheduleKeyDeletion")) }'),
+    ("s3-bucket-policy-changes", '{ ($.eventSource = "s3.amazonaws.com") && (($.eventName = "PutBucketAcl") || ($.eventName = "PutBucketPolicy") || ($.eventName = "PutBucketCors") || ($.eventName = "PutBucketLifecycle") || ($.eventName = "PutBucketReplication") || ($.eventName = "DeleteBucketPolicy") || ($.eventName = "DeleteBucketCors") || ($.eventName = "DeleteBucketLifecycle") || ($.eventName = "DeleteBucketReplication")) }'),
+    ("config-changes", '{ ($.eventSource = "config.amazonaws.com") && (($.eventName = "StopConfigurationRecorder") || ($.eventName = "DeleteDeliveryChannel") || ($.eventName = "PutDeliveryChannel") || ($.eventName = "PutConfigurationRecorder") || ($.eventName = "DeleteConfigurationRecorder")) }'),
+    ("security-group-changes", '{ ($.eventName = "AuthorizeSecurityGroupIngress") || ($.eventName = "AuthorizeSecurityGroupEgress") || ($.eventName = "RevokeSecurityGroupIngress") || ($.eventName = "RevokeSecurityGroupEgress") || ($.eventName = "CreateSecurityGroup") || ($.eventName = "DeleteSecurityGroup") }'),
+    ("nacl-changes", '{ ($.eventName = "CreateNetworkAcl") || ($.eventName = "CreateNetworkAclEntry") || ($.eventName = "DeleteNetworkAcl") || ($.eventName = "DeleteNetworkAclEntry") || ($.eventName = "ReplaceNetworkAclEntry") || ($.eventName = "ReplaceNetworkAclAssociation") }'),
+    ("network-gateway-changes", '{ ($.eventName = "CreateCustomerGateway") || ($.eventName = "DeleteCustomerGateway") || ($.eventName = "AttachInternetGateway") || ($.eventName = "CreateInternetGateway") || ($.eventName = "DeleteInternetGateway") || ($.eventName = "DetachInternetGateway") }'),
+    ("route-table-changes", '{ ($.eventSource = "ec2.amazonaws.com") && (($.eventName = "CreateRoute") || ($.eventName = "CreateRouteTable") || ($.eventName = "ReplaceRoute") || ($.eventName = "ReplaceRouteTableAssociation") || ($.eventName = "DeleteRouteTable") || ($.eventName = "DeleteRoute") || ($.eventName = "DisassociateRouteTable")) }'),
+    ("vpc-changes", '{ ($.eventName = "CreateVpc") || ($.eventName = "DeleteVpc") || ($.eventName = "ModifyVpcAttribute") || ($.eventName = "AcceptVpcPeeringConnection") || ($.eventName = "CreateVpcPeeringConnection") || ($.eventName = "DeleteVpcPeeringConnection") || ($.eventName = "RejectVpcPeeringConnection") || ($.eventName = "AttachClassicLinkVpc") || ($.eventName = "DetachClassicLinkVpc") || ($.eventName = "DisableVpcClassicLink") || ($.eventName = "EnableVpcClassicLink") }'),
+    ("organizations-changes", '{ ($.eventSource = "organizations.amazonaws.com") && (($.eventName = "AcceptHandshake") || ($.eventName = "AttachPolicy") || ($.eventName = "CreateAccount") || ($.eventName = "CreatePolicy") || ($.eventName = "DeletePolicy") || ($.eventName = "DetachPolicy") || ($.eventName = "LeaveOrganization") || ($.eventName = "MoveAccount") || ($.eventName = "RemoveAccountFromOrganization") || ($.eventName = "UpdatePolicy")) }'),
+]
+# M1: EventBridge rule names (stack-drift is CDK only: Terraform drift = scheduled `terraform plan -detailed-exitcode`).
+EVENT_RULES = ["guardduty", "securityhub", "inspector", "config-compliance", "backup", "secret-rotation", "access-analyzer"]
+# M3: service-health alarm names.
+HEALTH_ALARMS = ["bedrock-throttles", "bedrock-server-errors", "bedrock-invocation-log-delivery",
+                 "guardrail-interventions", "gateway-system-errors", "gateway-throttles"]
+
+
+def _health_alarm(key, name, desc, namespace, metric, stat, period, evals, threshold, op, dims, missing="notBreaching"):
+    return ('resource "aws_cloudwatch_metric_alarm" "' + key + '" {\n'
+            '  alarm_name                = "sgea-${var.env}-' + name + '"\n'
+            '  alarm_description         = "' + desc + '"\n'
+            '  namespace                 = "' + namespace + '"\n'
+            '  metric_name               = "' + metric + '"\n'
+            + ('  dimensions                = ' + dims + '\n' if dims else '') +
+            '  statistic                 = "' + stat + '"\n'
+            '  period                    = ' + str(period) + '\n'
+            '  evaluation_periods        = ' + str(evals) + '\n'
+            '  datapoints_to_alarm       = ' + str(evals) + '\n'
+            '  threshold                 = ' + threshold + '\n'
+            '  comparison_operator       = "' + op + '"\n'
+            '  treat_missing_data        = "' + missing + '"\n'
+            '  alarm_actions             = [var.alarm_topic_arn]\n'
+            '  ok_actions                = local.ok_actions\n'
+            '  insufficient_data_actions = local.insufficient_data_actions\n'
+            '  tags                      = var.tags\n'
+            '}\n\n')
+
+
+def _mod_enclave_monitoring(partition, gateway=True, invocation_logging=True):
+    """ADR 0002 enclave-monitoring layer. Emit-time switches: `gateway` (AgentCore gateway exists),
+    `invocation_logging` (model-invocation logging on); Budgets / Cost Anomaly Detection only in the
+    commercial partition (GovCloud billing lives in the commercial payer account)."""
+    cost = partition == "aws"
+    variables = (_seam_header("enclave-monitoring", SEAM_RAW, "raw EventBridge / CloudWatch / Budgets / CE / Access Analyzer / X-Ray",
+                              "point at an official monitoring module if one ships") + """\
+variable "env" { type = string }
+variable "alarm_topic_arn" {
+  description = "Enclave security-alarm SNS topic sgea-<env>-security-alarms (CMK-encrypted); every notification goes here."
+  type        = string
+}
+variable "kms_key_arn" {
+  description = "Enclave CMK (aws/spans log group)."
+  type        = string
+}
+variable "cloudtrail_log_group_name" {
+  description = "Enclave trail log group (/sgea/<env>/cloudtrail) the M2 metric filters read."
+  type        = string
+}
+variable "cloudwatch_retention_days" {
+  description = "Pack retention for the aws/spans log group (cw-loggroup-retention-period-check)."
+  type        = number
+}
+variable "alarm_insufficient_data_action" {
+  description = "cloudwatch-alarm-action-check insufficientDataActionRequired."
+  type        = bool
+  default     = true
+}
+variable "alarm_ok_action" {
+  description = "cloudwatch-alarm-action-check okActionRequired."
+  type        = bool
+  default     = false
+}
+variable "create_access_analyzer" {
+  type    = bool
+  default = true
+}
+variable "create_unused_access_analyzer" {
+  type    = bool
+  default = false
+}
+variable "manage_transaction_search" {
+  type    = bool
+  default = true
+}
+variable "monthly_budget_usd" {
+  type    = number
+  default = 0
+}
+variable "create_cost_anomaly_monitor" {
+  type    = bool
+  default = false
+}
+variable "break_glass" {
+  description = "The break-glass role exists (create_break_glass_role): alarm on every assumption."
+  type        = bool
+  default     = false
+}
+variable "break_glass_role_arn" {
+  type    = string
+  default = null
+}
+variable "guardrail_arn" { type = string }
+variable "guardrail_version" { type = string }
+variable "guardrail_intervention_threshold" {
+  type    = number
+  default = 50
+}
+""" + ("""variable "gateway_arn" {
+  description = "AgentCore gateway ARN (gateway-* alarms)."
+  type        = string
+}
+""" if gateway else "") + """variable "tags" {
+  type    = map(string)
+  default = {}
+}
+""")
+    filters = "".join("    %s = %s\n" % (json.dumps(n), json.dumps(p)) for n, p in CT_FILTERS)
+    main = (_seam_header("enclave-monitoring", SEAM_RAW, "raw EventBridge / CloudWatch / Budgets / CE / Access Analyzer / X-Ray",
+                         "swap internals only") + """\
+# ADR 0002 — enclave monitoring, audit protection and break-glass. Every notification goes to the
+# CMK-encrypted topic sgea-<env>-security-alarms (topic policy: enclave-logging; key policy
+# statement EventDeliveryToEncryptedSns: enclave-kms).
+data "aws_caller_identity" "this" {}
+data "aws_partition" "this" {}
+data "aws_region" "this" {}
+
+locals {
+  account                   = data.aws_caller_identity.this.account_id
+  arn                       = data.aws_partition.this.partition
+  region                    = data.aws_region.this.region
+  ok_actions                = var.alarm_ok_action ? [var.alarm_topic_arn] : []
+  insufficient_data_actions = var.alarm_insufficient_data_action ? [var.alarm_topic_arn] : []
+  analyzer                  = var.create_access_analyzer || var.create_unused_access_analyzer
+}
+
+# ----- M1: event routing (EventBridge default bus -> SNS) -----
+locals {
+  event_patterns = merge({
+    guardduty = {
+      source      = ["aws.guardduty"]
+      detail-type = ["GuardDuty Finding"]
+      detail      = { severity = [{ numeric = [">=", 7] }] }
+    }
+    securityhub = {
+      source      = ["aws.securityhub"]
+      detail-type = ["Security Hub Findings - Imported"]
+      detail = { findings = {
+        Severity = { Label = ["HIGH", "CRITICAL"] }
+        Workflow = { Status = ["NEW"] }
+      } }
+    }
+    inspector = {
+      source      = ["aws.inspector2"]
+      detail-type = ["Inspector2 Finding"]
+      detail      = { severity = ["HIGH", "CRITICAL"] }
+    }
+    config-compliance = {
+      source      = ["aws.config"]
+      detail-type = ["Config Rules Compliance Change"]
+      detail      = { newEvaluationResult = { complianceType = ["NON_COMPLIANT"] } }
+    }
+    backup = {
+      source      = ["aws.backup"]
+      detail-type = ["Backup Job State Change", "Copy Job State Change", "Restore Job State Change"]
+      detail      = { state = ["FAILED", "ABORTED", "EXPIRED"] }
+    }
+    secret-rotation = {
+      source      = ["aws.secretsmanager"]
+      detail-type = ["AWS Service Event via CloudTrail"]
+      detail      = { eventName = ["RotationFailed"] }
+    }
+    }, local.analyzer ? {
+    access-analyzer = {
+      source      = ["aws.access-analyzer"]
+      detail-type = ["Access Analyzer Finding"]
+      detail      = { status = ["ACTIVE"] }
+    }
+  } : {})
+}
+
+resource "aws_cloudwatch_event_rule" "this" {
+  for_each      = local.event_patterns
+  name          = "sgea-${var.env}-evt-${each.key}"
+  description   = "SGEA ${each.key} events to the enclave security-alarm topic."
+  event_pattern = jsonencode(each.value)
+  tags          = var.tags
+}
+
+resource "aws_cloudwatch_event_target" "this" {
+  for_each  = local.event_patterns
+  rule      = aws_cloudwatch_event_rule.this[each.key].name
+  target_id = "sgea-security-alarms"
+  arn       = var.alarm_topic_arn
+}
+
+# ----- M2: CloudTrail metric filters + alarms (/sgea/<env>/cloudtrail) -----
+locals {
+  ct_filters = merge({
+""" + filters + """  }, var.break_glass ? {
+    break-glass-assumed = "{ ($.eventName = \\"AssumeRole\\") && ($.requestParameters.roleArn = \\"${var.break_glass_role_arn}\\") }"
+  } : {})
+}
+
+resource "aws_cloudwatch_log_metric_filter" "this" {
+  for_each       = local.ct_filters
+  name           = "sgea-${var.env}-ct-${each.key}"
+  log_group_name = var.cloudtrail_log_group_name
+  pattern        = each.value
+  metric_transformation {
+    name      = each.key
+    namespace = "SGEA/${var.env}/CloudTrail"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "cloudtrail" {
+  for_each                  = local.ct_filters
+  alarm_name                = "sgea-${var.env}-ct-${each.key}"
+  alarm_description         = "SGEA CloudTrail ${each.key} (metric filter on the enclave trail)."
+  namespace                 = "SGEA/${var.env}/CloudTrail"
+  metric_name               = each.key
+  statistic                 = "Sum"
+  period                    = 300
+  evaluation_periods        = 1
+  threshold                 = 1
+  comparison_operator       = "GreaterThanOrEqualToThreshold"
+  treat_missing_data        = "notBreaching"
+  alarm_actions             = [var.alarm_topic_arn]
+  ok_actions                = local.ok_actions
+  insufficient_data_actions = local.insufficient_data_actions
+  tags                      = var.tags
+  depends_on                = [aws_cloudwatch_log_metric_filter.this]
+}
+
+# ----- M3: service health -----
+""" + _health_alarm("bedrock_throttles", "bedrock-throttles", "Bedrock invocation throttles (account aggregate).",
+                    "AWS/Bedrock", "InvocationThrottles", "Sum", 300, 2, "10", "GreaterThanOrEqualToThreshold", None)
+      + _health_alarm("bedrock_server_errors", "bedrock-server-errors", "Bedrock invocation server errors (account aggregate).",
+                      "AWS/Bedrock", "InvocationServerErrors", "Sum", 300, 1, "5", "GreaterThanOrEqualToThreshold", None)
+      + (_health_alarm("bedrock_invocation_log_delivery", "bedrock-invocation-log-delivery",
+                       "Bedrock model-invocation logs are not reaching CloudWatch Logs.",
+                       "AWS/Bedrock", "ModelInvocationLogsCloudWatchDeliverySuccess", "Minimum", 900, 1, "1",
+                       "LessThanThreshold", None) if invocation_logging else "")
+      + _health_alarm("guardrail_interventions", "guardrail-interventions", "Baseline guardrail interventions above threshold.",
+                      "AWS/Bedrock/Guardrails", "InvocationsIntervened", "Sum", 900, 1, "var.guardrail_intervention_threshold",
+                      "GreaterThanOrEqualToThreshold", "{ GuardrailArn = var.guardrail_arn, GuardrailVersion = var.guardrail_version }")
+      + (_health_alarm("gateway_system_errors", "gateway-system-errors", "AgentCore gateway system errors.",
+                       "AWS/Bedrock-AgentCore", "SystemErrors", "Sum", 300, 1, "5", "GreaterThanOrEqualToThreshold",
+                       '{ Operation = "InvokeGateway", Protocol = "MCP", Resource = var.gateway_arn }')
+         + _health_alarm("gateway_throttles", "gateway-throttles", "AgentCore gateway throttles.",
+                         "AWS/Bedrock-AgentCore", "Throttles", "Sum", 300, 2, "10", "GreaterThanOrEqualToThreshold",
+                         '{ Operation = "InvokeGateway", Protocol = "MCP", Resource = var.gateway_arn }') if gateway else "")
+      + ("""# ----- M4: cost (commercial partition; GovCloud billing lives in the commercial payer account) -----
+resource "aws_budgets_budget" "monthly" {
+  count        = var.monthly_budget_usd > 0 ? 1 : 0
+  name         = "sgea-${var.env}-monthly-cost"
+  budget_type  = "COST"
+  time_unit    = "MONTHLY"
+  limit_amount = tostring(var.monthly_budget_usd)
+  limit_unit   = "USD"
+  notification {
+    comparison_operator       = "GREATER_THAN"
+    threshold                 = 80
+    threshold_type            = "PERCENTAGE"
+    notification_type         = "ACTUAL"
+    subscriber_sns_topic_arns = [var.alarm_topic_arn]
+  }
+  notification {
+    comparison_operator       = "GREATER_THAN"
+    threshold                 = 100
+    threshold_type            = "PERCENTAGE"
+    notification_type         = "FORECASTED"
+    subscriber_sns_topic_arns = [var.alarm_topic_arn]
+  }
+  tags = var.tags
+}
+
+resource "aws_ce_anomaly_monitor" "services" {
+  count             = var.create_cost_anomaly_monitor ? 1 : 0
+  name              = "sgea-${var.env}-services"
+  monitor_type      = "DIMENSIONAL"
+  monitor_dimension = "SERVICE"
+  tags              = var.tags
+}
+
+resource "aws_ce_anomaly_subscription" "anomalies" {
+  count            = var.create_cost_anomaly_monitor ? 1 : 0
+  name             = "sgea-${var.env}-anomalies"
+  frequency        = "IMMEDIATE"
+  monitor_arn_list = [aws_ce_anomaly_monitor.services[0].arn]
+  subscriber {
+    type    = "SNS"
+    address = var.alarm_topic_arn
+  }
+  threshold_expression {
+    dimension {
+      key           = "ANOMALY_TOTAL_IMPACT_ABSOLUTE"
+      match_options = ["GREATER_THAN_OR_EQUAL"]
+      values        = ["100"]
+    }
+  }
+  tags = var.tags
+}
+
+""" if cost else "# ----- M4: cost — skipped in " + partition + " (Budgets / Cost Anomaly Detection live in the commercial payer account) -----\n\n")
+      + """# ----- M5: IAM Access Analyzer (findings route through M1 access-analyzer) -----
+resource "aws_accessanalyzer_analyzer" "external" {
+  count         = var.create_access_analyzer ? 1 : 0
+  analyzer_name = "sgea-${var.env}-external-access"
+  type          = "ACCOUNT"
+  tags          = var.tags
+}
+
+resource "aws_accessanalyzer_analyzer" "unused" {
+  count         = var.create_unused_access_analyzer ? 1 : 0
+  analyzer_name = "sgea-${var.env}-unused-access"
+  type          = "ACCOUNT_UNUSED_ACCESS"
+  configuration {
+    unused_access {
+      unused_access_age = 90
+    }
+  }
+  tags = var.tags
+}
+
+# ----- M6: CloudWatch Transaction Search (OpenTelemetry spans -> aws/spans) -----
+# `aws/spans` cannot be created by the enclave (log-group names starting with aws/ are reserved; sandbox
+# 2026-10-26): X-Ray creates it with the first spans. CMK and retention are a post-deploy step (MANUAL-STEPS.md).
+resource "aws_cloudwatch_log_resource_policy" "transaction_search" {
+  count       = var.manage_transaction_search ? 1 : 0
+  policy_name = "sgea-${var.env}-transaction-search"
+  policy_document = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "TransactionSearchXRayAccess"
+      Effect    = "Allow"
+      Principal = { Service = "xray.amazonaws.com" }
+      Action    = "logs:PutLogEvents"
+      Resource = [
+        "arn:${local.arn}:logs:${local.region}:${local.account}:log-group:aws/spans:*",
+        "arn:${local.arn}:logs:${local.region}:${local.account}:log-group:/aws/application-signals/data:*",
+      ]
+      Condition = {
+        ArnLike      = { "aws:SourceArn" = "arn:${local.arn}:xray:${local.region}:${local.account}:*" }
+        StringEquals = { "aws:SourceAccount" = local.account }
+      }
+    }]
+  })
+}
+
+# AWS::XRay::TransactionSearchConfig: spans to CloudWatch Logs, 1 % indexed as trace summaries.
+resource "awscc_xray_transaction_search_config" "this" {
+  count               = var.manage_transaction_search ? 1 : 0
+  indexing_percentage = 1
+  depends_on          = [aws_cloudwatch_log_resource_policy.transaction_search]
+}
+""")
+    outputs = ('output "event_rule_names" { value = [for r in aws_cloudwatch_event_rule.this : r.name] }\n'
+               'output "cloudtrail_alarm_names" { value = [for a in aws_cloudwatch_metric_alarm.cloudtrail : a.alarm_name] }\n'
+               'output "external_access_analyzer_arn" { value = one(aws_accessanalyzer_analyzer.external[*].arn) }\n'
+               'output "spans_log_group" { value = var.manage_transaction_search ? "aws/spans" : null }\n')
+    readme = ("# enclave-monitoring (SGEA wrapper seam, ADR 0002)\n\n"
+              "Every notification goes to the CMK-encrypted topic `sgea-<env>-security-alarms`.\n\n"
+              "- **M1** EventBridge rules `sgea-<env>-evt-*`: GuardDuty (severity >= 7), Security Hub (HIGH/CRITICAL, NEW), "
+              "Inspector (HIGH/CRITICAL), Config NON_COMPLIANT, Backup / copy / restore failures, Secrets Manager "
+              "RotationFailed, Access Analyzer ACTIVE findings (when an analyzer is created). Stack drift is CDK-only; "
+              "with Terraform run a scheduled `terraform plan -detailed-exitcode` in the pipeline (OPERATIONS.md).\n"
+              "- **M2** CloudTrail metric filters + alarms `sgea-<env>-ct-*` on `/sgea/<env>/cloudtrail` "
+              "(namespace `SGEA/<env>/CloudTrail`); `ct-break-glass-assumed` only with the break-glass role.\n"
+              "- **M3** Bedrock throttles / server errors" + (" / invocation-log delivery" if invocation_logging else "") +
+              ", guardrail interventions" + (", AgentCore gateway system errors / throttles" if gateway else "") + ".\n"
+              + ("- **M4** AWS Budgets `sgea-<env>-monthly-cost` (when `monthly_budget_usd` > 0) and Cost Anomaly Detection "
+                 "`sgea-<env>-services` / `sgea-<env>-anomalies` (>= USD 100 total impact).\n" if cost else
+                 "- **M4** skipped in " + partition + ": billing lives in the commercial payer account.\n") +
+              "- **M5** IAM Access Analyzer `sgea-<env>-external-access` (optional `sgea-<env>-unused-access`, 90 days).\n"
+              "- **M6** CloudWatch Transaction Search: the X-Ray log resource policy and Transaction Search (X-Ray creates `aws/spans`; CMK and retention are a post-deploy step), the X-Ray "
+              "log resource policy, `awscc_xray_transaction_search_config` at 1 % indexing.\n\n"
+              "> Where `kms_key_arn` is customer-supplied, its key policy needs the `EventDeliveryToEncryptedSns` "
+              "statement (events / budgets / costalerts) or EventBridge and cost notifications are dropped.\n")
+    return {"versions.tf": _versions_tf(partition, True), "variables.tf": variables,
+            "main.tf": main, "outputs.tf": outputs, "README.md": readme}
+
+
 WRAPPERS = {
     "bedrock-guardrail": _mod_bedrock_guardrail,
     "bedrock-knowledge-base": _mod_bedrock_kb,
@@ -2612,6 +3084,117 @@ def derive_bundles(resolved, root):
     return policy_library.bundles(resolved, authorized_model_ids(resolved, root))
 
 
+MONITORING_VARIABLES = """\
+# ----- ADR 0002 monitoring toggles (a landing zone may own these) -----
+variable "manage_monitoring" {
+  description = "ADR 0002 enclave-monitoring layer (event routing, CloudTrail / service alarms, cost, Access Analyzer, Transaction Search)."
+  type        = bool
+  default     = true
+}
+variable "create_access_analyzer" {
+  description = "IAM Access Analyzer sgea-<env>-external-access (type ACCOUNT). false where the landing zone runs one."
+  type        = bool
+  default     = true
+}
+variable "create_unused_access_analyzer" {
+  description = "IAM Access Analyzer sgea-<env>-unused-access (ACCOUNT_UNUSED_ACCESS, 90 days; paid)."
+  type        = bool
+  default     = false
+}
+variable "manage_transaction_search" {
+  description = "CloudWatch Transaction Search (log resource policy + TransactionSearchConfig). X-Ray creates aws/spans; apply the CMK and retention after the first spans (MANUAL-STEPS.md)."
+  type        = bool
+  default     = true
+}
+variable "monthly_budget_usd" {
+  description = "AWS Budgets monthly cost budget sgea-<env>-monthly-cost in USD; 0 = off. Commercial partition only."
+  type        = number
+  default     = 0
+}
+variable "create_cost_anomaly_monitor" {
+  description = "Cost Anomaly Detection sgea-<env>-services / sgea-<env>-anomalies. Commercial partition only. Off by default: an account allows one SERVICE monitor and AWS often creates a default one."
+  type        = bool
+  default     = false
+}
+variable "create_break_glass_role" {
+  description = "Break-glass role sgea-<env>-break-glass (AdministratorAccess, MFA within 1 hour; needs break_glass_principal_arns)."
+  type        = bool
+  default     = false
+  validation {
+    condition     = !var.create_break_glass_role || length(var.break_glass_principal_arns) > 0
+    error_message = "create_break_glass_role needs break_glass_principal_arns (who may assume the role)."
+  }
+}
+variable "break_glass_principal_arns" {
+  description = "IAM principals that may assume the break-glass role (with MFA)."
+  type        = list(string)
+  default     = []
+}
+variable "guardrail_intervention_threshold" {
+  description = "sgea-<env>-guardrail-interventions: baseline-guardrail interventions per 15 minutes."
+  type        = number
+  default     = 50
+}
+"""
+
+
+def _root_monitoring(resolved, root, agentcore, inv_logging):
+    """Root-stack HCL: ADR 0002 break-glass role + the enclave-monitoring module call."""
+    ab = account_baseline(resolved, root)
+    return (
+        '# ----- ADR 0002: break-glass role (MFA, 1-hour sessions; every assumption alarms) -----\n'
+        'data "aws_partition" "current" {}\n\n'
+        'resource "aws_iam_role" "break_glass" {\n'
+        '  count                = var.create_break_glass_role ? 1 : 0\n'
+        '  name                 = "sgea-${var.env}-break-glass" # SCP DenyAuditTampering exempts arn:<partition>:iam::*:role/sgea-*-break-glass\n'
+        '  description          = "SGEA break-glass access. Post-use review: docs/operations/access-review.md."\n'
+        '  max_session_duration = 3600\n'
+        '  assume_role_policy = jsonencode({\n'
+        '    Version = "2012-10-17"\n'
+        '    Statement = [{\n'
+        '      Sid       = "BreakGlassWithMfa"\n'
+        '      Effect    = "Allow"\n'
+        '      Principal = { AWS = var.break_glass_principal_arns }\n'
+        '      Action    = "sts:AssumeRole"\n'
+        '      Condition = {\n'
+        '        Bool            = { "aws:MultiFactorAuthPresent" = "true" }\n'
+        '        NumericLessThan = { "aws:MultiFactorAuthAge" = "3600" }\n'
+        '      }\n'
+        '    }]\n'
+        '  })\n'
+        '  tags = { "sgea:role" = "break-glass" }\n'
+        '}\n\n'
+        '# AWS managed AdministratorAccess (no inline policy: iam-no-inline-policy-check).\n'
+        'resource "aws_iam_role_policy_attachment" "break_glass" {\n'
+        '  count      = var.create_break_glass_role ? 1 : 0\n'
+        '  role       = aws_iam_role.break_glass[0].name\n'
+        '  policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/AdministratorAccess"\n'
+        '}\n\n'
+        '# ----- ADR 0002: enclave monitoring (events, CloudTrail / service alarms, cost, Access Analyzer, Transaction Search) -----\n'
+        'module "enclave_monitoring" {\n'
+        '  source                           = "./modules/enclave-monitoring"\n'
+        '  count                            = var.manage_monitoring ? 1 : 0\n'
+        '  env                              = var.env\n'
+        '  alarm_topic_arn                  = module.enclave_logging.monitoring_topic_arn\n'
+        '  kms_key_arn                      = local.kms_key_arn\n'
+        '  cloudtrail_log_group_name        = module.enclave_logging.cloudtrail_log_group\n'
+        '  cloudwatch_retention_days        = ' + str(log_retention_days(resolved, root)) + '\n'
+        '  alarm_insufficient_data_action   = ' + ("true" if ab["alarm_insufficient_data_action"] else "false") + '\n'
+        '  alarm_ok_action                  = ' + ("true" if ab["alarm_ok_action"] else "false") + '\n'
+        '  create_access_analyzer           = var.create_access_analyzer\n'
+        '  create_unused_access_analyzer    = var.create_unused_access_analyzer\n'
+        '  manage_transaction_search        = var.manage_transaction_search\n'
+        '  monthly_budget_usd               = var.monthly_budget_usd\n'
+        '  create_cost_anomaly_monitor      = var.create_cost_anomaly_monitor\n'
+        '  break_glass                      = var.create_break_glass_role\n'
+        '  break_glass_role_arn             = one(aws_iam_role.break_glass[*].arn)\n'
+        '  guardrail_arn                    = module.baseline_guardrail.guardrail_arn\n'
+        '  guardrail_version                = module.baseline_guardrail.guardrail_version\n'
+        '  guardrail_intervention_threshold = var.guardrail_intervention_threshold\n'
+        + ('  gateway_arn                      = module.agentcore_platform.gateway_arn\n' if agentcore else '') +
+        '}\n\n')
+
+
 def emit(resolved, prof, outdir, root=None):
     written = []
     partition = resolved["partition"]
@@ -2627,6 +3210,12 @@ def emit(resolved, prof, outdir, root=None):
         files = fn(partition)
         for fname, content in files.items():
             written.append(_w(os.path.join(outdir, "modules", name, fname), content))
+
+    # ---- ADR 0002 monitoring layer (emit-time: gateway / invocation logging / partition) ----
+    agentcore = "bedrock-agentcore" in resolved["services"]["allow"]
+    inv_logging = bool(resolved["logging"].get("model_invocation_logging"))
+    for fname, content in _mod_enclave_monitoring(partition, gateway=agentcore, invocation_logging=inv_logging).items():
+        written.append(_w(os.path.join(outdir, "modules", "enclave-monitoring", fname), content))
 
     # ---- tool-path interceptor Lambda package (deterministic zip) ----
     _write_zip(os.path.join(outdir, "modules", "agentcore-platform", "tool_policy_interceptor.zip"),
@@ -2710,7 +3299,8 @@ def emit(resolved, prof, outdir, root=None):
         'variable "kb_embedding_model_arn" {\n  type = string\n  default = null\n}\n'
         'variable "kb_aurora" {\n  type = any\n  default = null\n  description = "Aurora/pgvector storage inputs for the knowledge-base wrapper."\n}\n'
         'variable "agent_execution_role_arn" {\n  type = string\n  default = null\n}\n'
-        'variable "agent_container_uri" {\n  type = string\n  default = null\n}\n')
+        'variable "agent_container_uri" {\n  type = string\n  default = null\n}\n'
+        + MONITORING_VARIABLES)
     written.append(_w(os.path.join(outdir, "variables.tf"), variables))
 
     # ---- resolved control decisions as tfvars ----
@@ -2762,6 +3352,9 @@ def emit(resolved, prof, outdir, root=None):
         '  cloudwatch_retention_days = ' + str(log_retention_days(resolved, root)) + '\n'
         '  data_event_resource_types = ' + json.dumps(data_event_types(resolved)) + '\n'
         '  replica_region            = var.replica_region\n'
+        '  event_publishers          = var.manage_monitoring # ADR 0002 topic policy\n'
+        + ('  cost_publishers           = var.manage_monitoring && (var.monthly_budget_usd > 0 || var.create_cost_anomaly_monitor)\n'
+           if not govcloud else '  cost_publishers           = false # Budgets / Cost Anomaly Detection: commercial partition only\n') +
         '  providers = {\n    aws         = aws\n    aws.replica = aws.replica\n  }\n'
         '}\n\n'
         'module "enclave_network" {\n'
@@ -2903,6 +3496,7 @@ def emit(resolved, prof, outdir, root=None):
            '  input         = jsonencode({ source = "sgea-deploy" })\n'
            '  depends_on    = [module.enclave_network]\n'
            '}\n\n' if resolved["token_control"].get("enabled") and resolved["logging"].get("model_invocation_logging") else '') +
+        _root_monitoring(resolved, root, agentcore, inv_logging) +
         '# ----- resource layer (official pass-through seams) -----\n'
         'module "baseline_guardrail" {\n'
         '  source      = "./modules/bedrock-guardrail"\n'
@@ -2965,6 +3559,10 @@ def emit(resolved, prof, outdir, root=None):
            if "bedrock-agentcore" in resolved["services"]["allow"] else '') +
         '    vpc_id               = var.vpc_id\n'
         '  }\n'
+        '}\n\n'
+        'output "break_glass_role_arn" {\n'
+        '  description = "ADR 0002 break-glass role (null unless create_break_glass_role)."\n'
+        '  value       = one(aws_iam_role.break_glass[*].arn)\n'
         '}\n')
     written.append(_w(os.path.join(outdir, "outputs.tf"), outputs))
 

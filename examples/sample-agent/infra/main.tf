@@ -79,7 +79,7 @@ module "tool" {
 
   function_name                  = "${local.name}-enclave-facts"
   handler                        = "handler.handler"
-  runtime                        = "python3.12"
+  runtime                        = "python3.15"
   source_path                    = "${path.module}/../tool"
   timeout                        = 10
   reserved_concurrent_executions = 20

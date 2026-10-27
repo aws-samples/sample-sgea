@@ -38,6 +38,16 @@ export interface EnvInputs {
   kbRoleArn?: string;
   kbEmbeddingModelArn?: string;
   kbAurora?: any;             // JSON: {resourceArn, credentialsSecretArn, databaseName, tableName, primaryKeyField, vectorField, textField, metadataField}
+  // ----- enclave monitoring (ADR 0002); the landing zone may own these -----
+  manageMonitoring: boolean;           // the whole EnclaveMonitoring layer (default true)
+  createAccessAnalyzer: boolean;       // external-access analyzer, ACCOUNT (default true)
+  createUnusedAccessAnalyzer: boolean; // unused-access analyzer, paid, 90 days (default false)
+  manageTransactionSearch: boolean;    // Transaction Search + aws/spans log group (default true)
+  monthlyBudgetUsd: number;            // AWS Budgets cost budget, 0 = off (commercial partition only)
+  createCostAnomalyMonitor: boolean;   // Cost Anomaly Detection (default false: one SERVICE monitor per account; commercial partition only)
+  createBreakGlassRole: boolean;       // break-glass role (default false; needs breakGlassPrincipalArns)
+  breakGlassPrincipalArns: string[];   // who may assume it (comma list)
+  guardrailInterventionThreshold: number;   // sgea-<env>-guardrail-interventions threshold (default 50)
 }
 
 function list(node: Node, key: string): string[] {
@@ -86,5 +96,14 @@ export function envInputs(node: Node): EnvInputs {
     kbRoleArn: str(node, 'kbRoleArn'),
     kbEmbeddingModelArn: str(node, 'kbEmbeddingModelArn'),
     kbAurora: str(node, 'kbAurora') ? JSON.parse(str(node, 'kbAurora') as string) : undefined,
+    manageMonitoring: str(node, 'manageMonitoring') !== 'false',
+    createAccessAnalyzer: str(node, 'createAccessAnalyzer') !== 'false',
+    createUnusedAccessAnalyzer: str(node, 'createUnusedAccessAnalyzer') === 'true',
+    manageTransactionSearch: str(node, 'manageTransactionSearch') !== 'false',
+    monthlyBudgetUsd: Number(str(node, 'monthlyBudgetUsd') ?? 0),
+    createCostAnomalyMonitor: str(node, 'createCostAnomalyMonitor') === 'true',
+    createBreakGlassRole: str(node, 'createBreakGlassRole') === 'true',
+    breakGlassPrincipalArns: list(node, 'breakGlassPrincipalArns'),
+    guardrailInterventionThreshold: Number(str(node, 'guardrailInterventionThreshold') ?? 50),
   };
 }

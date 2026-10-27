@@ -164,6 +164,59 @@ def scp_model_allowlist(r, model_ids=None):
     })
 
 
+# Deployment principals exempt from the audit-protection SCP (ADR 0002). SCPs never apply to the
+# Organizations management account or to service-linked roles, so neither needs listing here.
+#   - CDK: CloudFormation executes `cdk deploy` as the bootstrap execution role (default qualifier
+#     hnb659fds; a custom qualifier goes in org_policy_exempt_principal_arns).
+#   - Terraform: no fixed role (applies run as the caller's pipeline role) -> supply it in
+#     org_policy_exempt_principal_arns.
+DEPLOYMENT_ROLE_PATTERNS = ["arn:${partition}:iam::*:role/cdk-hnb659fds-cfn-exec-role-*"]
+BREAK_GLASS_ROLE_PATTERN = "arn:${partition}:iam::*:role/sgea-*-break-glass"
+AUDIT_TAMPER_ACTIONS = [
+    "cloudtrail:StopLogging", "cloudtrail:DeleteTrail", "cloudtrail:UpdateTrail", "cloudtrail:PutEventSelectors",
+    "config:StopConfigurationRecorder", "config:DeleteConfigurationRecorder", "config:DeleteDeliveryChannel",
+    "guardduty:DeleteDetector", "guardduty:DisassociateFromAdministratorAccount",
+    "securityhub:DisableSecurityHub", "access-analyzer:DeleteAnalyzer",
+]
+KEY_TAMPER_ACTIONS = ["kms:ScheduleKeyDeletion", "kms:DisableKey", "kms:PutKeyPolicy"]
+PROFILE_TAG = "sgea:profile"
+
+
+def audit_exempt_principals(r):
+    """aws:PrincipalArn patterns exempt from DenyAuditTampering: deployment role(s), the
+    break-glass role and the optional resolved-config list policies.org_policy_exempt_principal_arns."""
+    extra = (r.get("policies") or {}).get("org_policy_exempt_principal_arns") or []
+    if not isinstance(extra, list) or not all(isinstance(a, str) and a.startswith("arn:") for a in extra):
+        raise SystemExit("policy library: policies.org_policy_exempt_principal_arns must be a list of ARNs")
+    out = []
+    # Customer ARNs are literal: escape "${" so templatefile / the CDK renderer pass it through.
+    for a in DEPLOYMENT_ROLE_PATTERNS + [BREAK_GLASS_ROLE_PATTERN] + [x.replace("${", "$${") for x in extra]:
+        if a not in out:
+            out.append(a)
+    return out
+
+
+def scp_audit_protection(r):
+    """ADR 0002 statement group DenyAuditTampering: every SCP bundle set carries it, for every
+    profile (not a baseline-selected pack). Partition comes from the ${partition} placeholder."""
+    exempt = {"ArnNotLike": {"aws:PrincipalArn": audit_exempt_principals(r)}}
+    return _doc({
+        "Sid": "DenyAuditTampering", "Effect": "Deny", "Action": AUDIT_TAMPER_ACTIONS, "Resource": "*",
+        "Condition": exempt,
+    }, {
+        "Sid": "DenyAuditTamperingLogGroups", "Effect": "Deny", "Action": ["logs:DeleteLogGroup"],
+        "Resource": ["arn:${partition}:logs:*:*:log-group:/sgea/*"], "Condition": exempt,
+    }, {
+        "Sid": "DenyAuditTamperingEnclaveKeys", "Effect": "Deny", "Action": KEY_TAMPER_ACTIONS, "Resource": "*",
+        "Condition": {**exempt, "Null": {"aws:ResourceTag/" + PROFILE_TAG: "false"}},
+    })
+
+
+# Statement groups added to the SCP bundles of every profile, independent of policies.scps.
+# Reported per bundle under "statement_groups" (not "packs", which mirrors policies.*).
+ALWAYS_SCP_GROUPS = {"audit-protection": scp_audit_protection}
+
+
 RENDERERS = {
     "bre-scp-01-region-lockdown": scp_region_lockdown,
     "bre-scp-02-bedrock-surface": scp_bedrock_surface,
@@ -220,10 +273,14 @@ def render(resolved, model_ids=None):
 def bundles(resolved, model_ids=None):
     """Packs bin-packed into attachable policy documents (<= MAX_ATTACHED per type, each
     <= SCP_MAX_CHARS). Packs needing the same deploy-time inputs share bundles, so a missing
-    input never blocks unrelated packs. -> [{name, type, packs, needs, template}]"""
+    input never blocks unrelated packs. ALWAYS_SCP_GROUPS (audit protection) join the SCP set for
+    every profile. -> [{name, type, packs, statement_groups, needs, template}]"""
     docs = _docs(resolved, model_ids)
+    # Always-on statement groups (no deploy-time inputs beyond partition) pack with the needs-free packs.
+    group_docs = {g: fn(resolved) for g, fn in ALWAYS_SCP_GROUPS.items()}
+    docs.update(group_docs)
     result = []
-    for ptype, packs in (("SERVICE_CONTROL_POLICY", resolved["policies"]["scps"]),
+    for ptype, packs in (("SERVICE_CONTROL_POLICY", resolved["policies"]["scps"] + list(group_docs)),
                          ("RESOURCE_CONTROL_POLICY", resolved["policies"]["rcps"])):
         groups = {}
         for pack in packs:
@@ -232,15 +289,18 @@ def bundles(resolved, model_ids=None):
         for needs, members in groups.items():
             gbins = []
             for pack in sorted(members, key=lambda p: -len(_template(docs[p]))):
+                key = "statement_groups" if pack in group_docs else "packs"
                 for b in gbins:
                     trial = _doc(*(b["statements"] + docs[pack]["Statement"]))
                     if len(_sample(_template(trial))) <= SCP_MAX_CHARS:
-                        b["statements"] += docs[pack]["Statement"]; b["packs"].append(pack)
+                        b["statements"] += docs[pack]["Statement"]; b[key].append(pack)
                         break
                 else:
                     if len(_sample(_template(docs[pack]))) > SCP_MAX_CHARS:
                         raise SystemExit("policy library: %s alone exceeds %d chars" % (pack, SCP_MAX_CHARS))
-                    gbins.append({"statements": list(docs[pack]["Statement"]), "packs": [pack], "needs": list(needs)})
+                    gbins.append({"statements": list(docs[pack]["Statement"]), "packs": [], "statement_groups": [],
+                                  "needs": list(needs)})
+                    gbins[-1][key].append(pack)
             bins += gbins
         if len(bins) > MAX_ATTACHED:
             raise SystemExit("policy library: %d %s documents needed; AWS allows %d attached per target "
@@ -248,5 +308,6 @@ def bundles(resolved, model_ids=None):
         prefix = "scp" if ptype == "SERVICE_CONTROL_POLICY" else "rcp"
         for n, b in enumerate(bins, 1):
             result.append({"name": "sgea-%s-%d" % (prefix, n), "type": ptype, "packs": sorted(b["packs"]),
-                           "needs": b["needs"], "template": _template(_doc(*b["statements"]))})
+                           "statement_groups": sorted(b["statement_groups"]), "needs": b["needs"],
+                           "template": _template(_doc(*b["statements"]))})
     return result

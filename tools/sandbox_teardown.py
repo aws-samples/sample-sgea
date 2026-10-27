@@ -316,6 +316,15 @@ def main(argv=None):
     if a.cdk:
         cdk_destroy(a, acct, region, regions, state, empty_buckets)
     elif os.path.exists(os.path.join(state, "enclave.tfstate")):
+        # The build dir may have been re-exported (or never initialised, when the run failed before apply):
+        # restore the run's backend override and tfvars, then init, so destroy sees the recorded state.
+        import shutil
+        with open(os.path.join(tf, "backend_override.tf"), "w") as f:
+            f.write('terraform {\n  backend "local" {\n    path = "%s"\n  }\n}\n' % os.path.join(state, "enclave.tfstate"))
+        for src, dst in (("network.json", "network.auto.tfvars.json"), ("sandbox.auto.tfvars.json", "sandbox.auto.tfvars.json")):
+            if os.path.exists(os.path.join(state, src)):
+                shutil.copy(os.path.join(state, src), os.path.join(tf, dst))
+        terraform("-chdir=" + tf, "init", "-input=false", "-reconfigure")
         # CloudTrail / Config / access logging keep writing until they are destroyed themselves:
         # empty the buckets again and retry once.
         if terraform("-chdir=" + tf, "destroy", "-input=false", "-auto-approve", check=False).returncode:
@@ -332,6 +341,12 @@ def main(argv=None):
     for page in lg.get_paginator("describe_log_groups").paginate(logGroupNamePrefix="/aws/rds/cluster/sgea-%s-vector" % a.env):
         for g_ in page["logGroups"]:
             lg.delete_log_group(logGroupName=g_["logGroupName"]); print("delete log group " + g_["logGroupName"])
+    # Transaction Search's `aws/spans` (ADR 0002): the enclave creates it with RETAIN, so the next deploy would hit
+    # ResourceAlreadyExists. Account-wide, but this tool only runs in a dedicated sandbox account.
+    for page in lg.get_paginator("describe_log_groups").paginate(logGroupNamePrefix="aws/spans"):
+        for g_ in page["logGroups"]:
+            if g_["logGroupName"] == "aws/spans":
+                lg.delete_log_group(logGroupName="aws/spans"); print("delete log group aws/spans")
     print("teardown complete")
 
 

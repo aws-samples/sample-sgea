@@ -56,13 +56,14 @@ Both engines emit the same statements. All service statements use `Resource: "*"
 | `BedrockInvocationLogDelivery` | `bedrock.amazonaws.com` | `kms:GenerateDataKey*`, `kms:Decrypt` | `aws:SourceAccount = <account>` | Model-invocation log delivery to the log store |
 | `S3EventNotificationsToEncryptedSns` | `s3.amazonaws.com` | `kms:GenerateDataKey*`, `kms:Decrypt` | `aws:SourceAccount = <account>` | S3 publishing `s3:ObjectRemoved:*` events to `sgea-<env>-log-store-events` |
 | `CloudWatchAlarmsToEncryptedSns` | `cloudwatch.amazonaws.com` | `kms:GenerateDataKey*`, `kms:Decrypt` | `aws:SourceAccount = <account>` | Alarms publishing to `sgea-<env>-security-alarms` |
+| `EventDeliveryToEncryptedSns` | `events.amazonaws.com`; in the commercial partition also `budgets.amazonaws.com` and `costalerts.amazonaws.com` | `kms:GenerateDataKey*`, `kms:Decrypt` | `aws:SourceAccount = <account>` | EventBridge rules `sgea-<env>-evt-*`, AWS Budgets and Cost Anomaly Detection publishing to `sgea-<env>-security-alarms` (ADR 0002) |
 
 The replica CMK's policy is only account administration. In Terraform that is the Sid `AccountAdministration`
 (root, `kms:*`); in CDK it is the default key policy.
 
 **Bring your own key** (`kms_key_arn` / `sgea:kmsKeyArn`). SGEA then creates no enclave key, and your key policy
-must grant the same service statements. Without them CloudTrail, AWS Config, Bedrock logging, S3 notifications and
-alarm delivery fail. The AWS Config service-linked role must exist before the key policy names it.
+must grant the same service statements. Without them CloudTrail, AWS Config, Bedrock logging, S3 notifications,
+alarm and event delivery fail. Tag your key `sgea:profile` if you want the audit-protection SCP (section 2) to cover it. The AWS Config service-linked role must exist before the key policy names it.
 
 ### Inspect and rotate
 
@@ -98,9 +99,9 @@ recovery points in `sgea-<env>`. Only the replica bucket (replica CMK) survives.
 - The AWS Config rule `kms-cmk-not-scheduled-for-deletion` (managed rule `KMS_CMK_NOT_SCHEDULED_FOR_DELETION`). It is
   in the FedRAMP Low / Moderate / High, HIPAA Security, FDA Part 11, NIST 800-53 Rev 5 and CMMC 2.0 L2 packs and
   reports the key NON_COMPLIANT.
-- CloudTrail `ScheduleKeyDeletion` events.
-- Do not rely on the SNS alarm topic for this. It shares the key.
-- The SGEA SCP library does not deny `kms:ScheduleKeyDeletion`. Check whether your landing zone's guardrails do.
+- CloudTrail `ScheduleKeyDeletion` events, and the alarm `sgea-<env>-ct-kms-key-disable-or-delete` (any key disabled or scheduled for deletion; incident response playbook 8).
+- Do not rely on the SNS alarm topic for the enclave key itself. The topic shares the key, so once the key is disabled or pending deletion that alarm (and every other one) cannot be delivered; it does reach you for other keys.
+- **Prevention.** Where the SGEA SCP bundles are deployed, the audit-protection statement `DenyAuditTamperingEnclaveKeys` denies `kms:ScheduleKeyDeletion`, `kms:DisableKey` and `kms:PutKeyPolicy` on every key tagged `sgea:profile` (the enclave keys carry the tag) to every principal except the CDK bootstrap execution role (`cdk-hnb659fds-cfn-exec-role-*`), `sgea-*-break-glass` and the principals in `policies.org_policy_exempt_principal_arns`. A deletion that got through came from one of those, from the management account, or from a role named to match the pattern (the exemption matches role names; ADR 0002). Without the SGEA SCPs, check whether your landing zone's guardrails deny these calls.
 
 ```bash
 aws kms describe-key --key-id <key-id> --query 'KeyMetadata.[KeyState,DeletionDate,Description]'
@@ -140,9 +141,10 @@ setting, and the last deploy wins.
   pending deletion or deleted, **no later deploy can switch the vault**. On 2026-10-21 a Terraform run failed with
   `creating Bedrock AgentCore Token Vault CMK`, because the vault still referenced the previous run's CMK, which was
   pending deletion.
-- **Switch the vault back to the service-managed key BEFORE you schedule the CMK for deletion.** Do not rely on stack
-  deletion for this: the CDK custom resource has no delete handler. The SGEA teardown resets the vault explicitly,
-  and stops before deleting anything if the SDK cannot.
+- **Switch the vault back to the service-managed key BEFORE you schedule the CMK for deletion.** The engines differ:
+  - **CDK:** the token-vault custom resource `Custom::SgeaTokenVaultCmk` has an `onDelete` call (`SetTokenVaultCMK` with `keyType = ServiceManagedKey`), so `cdk destroy` resets the vault while the key still exists (CDK retains the key). Confirm with `get-token-vault` before you schedule the key.
+  - **Terraform:** `aws_bedrockagentcore_token_vault_cmk` has a **no-op delete** in the `aws` provider, so `terraform destroy` leaves the vault on the enclave CMK and schedules that key for deletion in the same run. **Reset the vault yourself before `terraform destroy`** (commands below).
+  - The SGEA sandbox teardown resets the vault explicitly on both engines, and stops before deleting anything if the SDK cannot.
 
 ```bash
 aws bedrock-agentcore-control get-token-vault --region <region> --query kmsConfiguration
@@ -153,14 +155,14 @@ aws bedrock-agentcore-control set-token-vault-cmk --region <region> --kms-config
 
 1. Remove the tenant apps and collect evidence.
 2. Confirm no other `<env>` in the account and region still uses the vault.
-3. Switch the vault to `ServiceManagedKey` and confirm with `get-token-vault`.
-4. Only then destroy the enclave and schedule the key for deletion (its 30-day window).
+3. Switch the vault to `ServiceManagedKey` and confirm with `get-token-vault`. Terraform: required before the destroy. CDK: `cdk destroy` does it, but resetting first is harmless; confirm after the destroy either way.
+4. Only then destroy the enclave and schedule the key for deletion (its 30-day window), as a principal exempt from the audit-protection SCP (section 2; `decommissioning.md`, section 2).
 
 **Repair when the vault references a key that is pending deletion** (what fixed the sandbox on 2026-10-21):
 
 1. `aws kms cancel-key-deletion --key-id <old-key>`, then `aws kms enable-key --key-id <old-key>`.
 2. `set-token-vault-cmk --kms-configuration keyType=ServiceManagedKey`, or point the vault at the new key.
-3. Re-schedule the old key for deletion only if it is really retired:
+3. Re-schedule the old key for deletion only if it is really retired (as an exempt principal where the audit-protection SCP applies):
    `aws kms schedule-key-deletion --key-id <old-key> --pending-window-in-days 30`.
 
 ## 4. Aurora admin secret (RDS-managed)
@@ -210,10 +212,10 @@ The enclave holds **no signing keys and no client secrets** for inbound authenti
 |---|---|---|---|
 | Daily (automate) | No enclave key pending deletion or disabled | `kms-cmk-not-scheduled-for-deletion` in the packs; `aws kms describe-key --key-id alias/sgea-<env>`, and the replica key in `<replica-region>` | `Enabled`, rule COMPLIANT |
 | Monthly | Key rotation on, rotations happening | `aws kms get-key-rotation-status`, `list-key-rotations` (both keys) | `KeyRotationEnabled: true`; last rotation within 12 months |
-| Monthly | Key policy unchanged | `get-key-policy` Sids compared with section 1; CloudTrail `PutKeyPolicy` | Same 8 statements, no wildcard principal |
+| Monthly | Key policy unchanged | `get-key-policy` Sids compared with section 1; CloudTrail `PutKeyPolicy` | Same 9 statements, no wildcard principal |
 | Monthly | Token vault on the current enclave CMK | `aws bedrock-agentcore-control get-token-vault` | `CustomerManagedKey`, `kmsKeyArn` = `alias/sgea-<env>` target |
 | Monthly | Aurora secret rotating | `describe-secret` (section 4); `secretsmanager-*` pack rules | `RotationEnabled: true`, `LastRotatedDate` within the schedule |
-| Quarterly | Who can use or administer the keys | IAM policies granting `kms:*` / `kms:ScheduleKeyDeletion` / `kms:PutKeyPolicy` on the enclave key (IAM Access Analyzer, policy review) | Pipeline and break-glass roles only |
+| Quarterly | Who can use or administer the keys | IAM policies granting `kms:*` / `kms:ScheduleKeyDeletion` / `kms:PutKeyPolicy` on the enclave key (IAM Access Analyzer, policy review); the principals exempt from the audit-protection SCP (`access-review.md`, section 6) | Pipeline and break-glass roles only |
 | Quarterly | IdP signing-key and client review | IdP admin console; `agent_jwt_allowed_clients` in the deployed inputs | Only approved client ids; signing keys rotated per IdP policy |
 | Before any decommission or key replacement | Token-vault ordering | Section 3 | Vault on `ServiceManagedKey` (or the new key) before the old key is scheduled |
 | Yearly (exercise) | Cancel-deletion and restore drill in a sandbox | Section 2; restore one recovery point from `sgea-<env>` | Drill recorded with times |

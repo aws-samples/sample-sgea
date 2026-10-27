@@ -41,7 +41,7 @@ For one profile, `sgea export` writes `build/<profile-id>/`:
 
 | Output | What it is |
 |---|---|
-| `terraform/` | Root stack + 15 wrapper modules built on pinned `terraform-aws-modules` and the official `aws` / `awscc` providers. `terraform init && terraform apply`. |
+| `terraform/` | Root stack + 16 wrapper modules built on pinned `terraform-aws-modules` and the official `aws` / `awscc` providers. `terraform init && terraform apply`. |
 | `cdk/` | AWS CDK (TypeScript) app synthesizing two CloudFormation stacks (`SgeaEnclave`, `SgeaEnclaveLogReplica`) from official L2 constructs (L1 where the L2 is alpha or absent). `npm ci && npx cdk deploy --all`. |
 | `resolved_profile.json` | The single source of truth both engines were generated from (audit copy of every control decision). |
 | `MANUAL-STEPS.md` | Everything the deployment team must do outside the IaC for this profile: AWS requests (e.g. the Lambda concurrency quota), other-account steps (Organizations SCPs, BAA, GovCloud), landing-zone overlaps, customer-owned prerequisites, process controls, **known open findings**, a **running-cost estimate** (fixed monthly floor from current list prices), post-deploy steps. |
@@ -283,7 +283,8 @@ Both engines emit the same resources (Terraform module → CDK construct of the 
 | Backup (`enclave-backup`) | Vault (CMK, vault lock, deny-deletion access policy), daily plan with the pack retention, one selection covering Aurora, the token ledger and the log / config stores |
 | Detective (`config-conformance`, `security-services`) | AWS Config recorder + delivery, one AWS conformance pack per composed baseline (with SGEA parameter overlays), GuardDuty, Security Hub (NIST 800-53 Rev 5), Amazon Inspector where a pack requires it |
 | Account baseline (`account-baseline`) | EBS encryption by default (CMK), EBS snapshot public-sharing block, account S3 Block Public Access, IAM password policy (pack parameters), closed VPC default security group |
-| Governance (`org-guardrail`) | SCP/RCP library bundled into ≤ 4 SCPs + ≤ 4 RCPs: region and service allow-lists, model allow-list, guardrail enforcement, data perimeter, identity and network perimeter (deployed from the management account) |
+| Monitoring (`enclave-monitoring`) | EventBridge routing of GuardDuty, Security Hub, Inspector, AWS Config compliance, AWS Backup, secret-rotation and Access Analyzer events to the CMK-encrypted alarm topic; CloudTrail metric-filter alarms (trail, Config, KMS, IAM, bucket-policy, network and Organizations changes, root use, console sign-in without MFA, failed sign-ins, unauthorized API calls); Bedrock throttle / server-error / invocation-log-delivery, guardrail-intervention and gateway error / throttle alarms; AWS Budgets (opt-in amount) and Cost Anomaly Detection (opt-in), commercial partition only; IAM Access Analyzer; CloudWatch Transaction Search (X-Ray creates `aws/spans`; CMK and retention are a post-deploy step); optional MFA-only break-glass role with an alarm on every use; daily CloudFormation drift detection (CDK) |
+| Governance (`org-guardrail`) | SCP/RCP library bundled into ≤ 4 SCPs + ≤ 4 RCPs: region and service allow-lists, model allow-list, guardrail enforcement, data perimeter, identity and network perimeter, audit protection (deny stopping or deleting the trail, the Config recorder, GuardDuty, Security Hub, Access Analyzer and `/sgea/*` log groups, and disabling, deleting or re-policying keys tagged `sgea:profile`, except for the deployment, break-glass and listed exempt roles) (deployed from the management account) |
 | DoD SCCA (`dod-scca`, IL4 / IL5) | VDSS (AWS Network Firewall, default drop, egress allow-list) and VDMS logging |
 | Function hygiene | Enclave Lambdas in the VPC with KMS-encrypted dead-letter queues, pack-derived reserved concurrency, X-Ray and CMK-encrypted environment; **no inline IAM policies** anywhere (a CDK aspect converts them) |
 | Knowledge base (`bedrock-knowledge-base`) | Per-app wrapper on the Aurora vector store, emitted when its inputs are supplied |
@@ -344,12 +345,13 @@ the AWS Artifact reports yourself and rebuild to add them ([Maintaining the sour
 
 | Document | Covers |
 |---|---|
-| [`incident-response.md`](docs/operations/incident-response.md) | Playbooks per signal the enclave emits (guardrail / PII spikes, token budget, interceptor denials, CloudTrail / Config delivery, log-store deletions, GuardDuty, tenant credential compromise); escalation template; post-incident review |
+| [`incident-response.md`](docs/operations/incident-response.md) | Signal inventory and playbooks per signal the enclave emits (guardrail / PII spikes, token budget, interceptor denials, CloudTrail / Config delivery, log-store deletions, GuardDuty, tenant credential compromise, audit / security-configuration and network changes, root and sign-in alarms, break-glass use, Security Hub / Inspector / Access Analyzer findings, Config compliance and stack drift, backup / rotation failures, Bedrock / gateway health, budget and cost anomalies); escalation template; post-incident review |
 | [`key-and-secret-management.md`](docs/operations/key-and-secret-management.md) | Enclave CMKs and key-policy statements, rotation, cancelling a scheduled deletion, token-vault key dependency, Aurora admin secret, JWT / Cognito keys, periodic review |
-| [`change-and-upgrade.md`](docs/operations/change-and-upgrade.md) | Upgrading SGEA or the conformance packs: re-export, diff, verify, check, apply order, disruptive changes, rollback, re-evaluation |
+| [`change-and-upgrade.md`](docs/operations/change-and-upgrade.md) | Upgrading SGEA or the conformance packs: re-export, diff, verify, check, apply order, disruptive changes, SCP exemptions for Terraform pipelines, drift detection, rollback, re-evaluation |
+| [`tenant-requirements.md`](docs/operations/tenant-requirements.md) | Application-team contract: numbered requirements (TR-01–TR-25) with how each is verified, the enclave interface, tracing, and compiled code for Python, Node.js, .NET and Java |
 | [`tenant-onboarding.md`](docs/operations/tenant-onboarding.md) | What an app team must do to deploy into the enclave, with a checklist |
 | [`decommissioning.md`](docs/operations/decommissioning.md) | Teardown order, Object Lock / key deletion windows, record retention, sign-off |
-| [`access-review.md`](docs/operations/access-review.md) | Quarterly review of roles, users, key and resource policies; break-glass procedure (customer-owned) |
+| [`access-review.md`](docs/operations/access-review.md) | Quarterly review of roles, users, key and resource policies, IAM Access Analyzer findings; break-glass procedure (optional SGEA role or your own) |
 
 Before the first deploy: [`docs/DEPLOYMENT-PREREQUISITES.md`](docs/DEPLOYMENT-PREREQUISITES.md).
 
@@ -395,16 +397,11 @@ pytest -q
     concurrent executions per function.
 - **Fixed in this release:** SGEA-KF-01 `s3-event-notifications-enabled` — the log stores now notify a CMK-encrypted
   SNS topic; verified live on HITRUST, both engines (2026-10-21).
-- **Operational gaps you need to close** (see the runbooks in `docs/operations/`):
-  - The enclave emits three CloudWatch alarms, all on its own Lambda functions. Add alarms for guardrail
-    interventions (`AWS/Bedrock/Guardrails` `InvocationsIntervened`), CloudTrail / AWS Config delivery failures and
-    GuardDuty findings; routing EventBridge events to the CMK-encrypted alarm topic also needs a key-policy statement
-    for `events.amazonaws.com`.
-  - No subscriptions are created on the SNS topics; subscribe your security team after deploy.
-  - `cdk destroy` does not reset the account-wide AgentCore token vault; switch it to the service-managed key before
-    the enclave CMK is deleted (`docs/operations/decommissioning.md`).
-  - The SCP library does not deny `cloudtrail:StopLogging`, `config:StopConfigurationRecorder` or
-    `kms:ScheduleKeyDeletion` on the enclave key, and SGEA creates no break-glass role; add these in your landing zone.
+- **The monitoring layer is new in this release**: deployed and torn down cleanly on HITRUST with both engines, e2e 7/7 (2026-10-27); alarm and event delivery to the topic were not exercised, and the audit-protection SCP was not applied (management account) (`enclave-monitoring`, `docs/adr/0002-enclave-monitoring.md`; runbooks in `docs/operations/`):
+  - No subscriptions are created on the SNS topics; subscribe your security team to `sgea-<env>-security-alarms` after deploy.
+  - Terraform has no fixed deployment role: list your pipeline role in `policies.org_policy_exempt_principal_arns` before the SCP bundles are applied, or applies that change the trail, the Config recorder, `/sgea/*` log groups or the enclave key are denied.
+  - The audit-protection SCP exemption matches role names (`sgea-*-break-glass`, `cdk-hnb659fds-cfn-exec-role-*`) across accounts, so a principal that can create IAM roles could create a matching role and bypass the denies; restrict `iam:CreateRole` in your landing zone until exact, account-scoped ARNs replace the patterns.
+  - Terraform does not reset the account-wide AgentCore token vault on destroy (the provider's delete is a no-op); switch it to the service-managed key before `terraform destroy` (`docs/operations/decommissioning.md`). CDK resets it on stack deletion.
 - **GovCloud profiles are not deployment-validated** (no GovCloud account in the validation sandbox).
 - **AgentCore is not authorized at DoD IL4 / IL5** (AWS Services in Scope: "Independent Assessment"); those profiles
   stay scaffold-only until AWS completes the assessment.

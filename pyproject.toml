@@ -14,11 +14,11 @@ dependencies = ["pyyaml==6.0.3"]   # rule dispositions / known findings (export,
 
 [project.optional-dependencies]
 # Structural profile validation against profiles/_schema.json.
-schema = ["jsonschema==4.25.0"]
+schema = ["jsonschema==4.26.0"]
 # Per-baseline service-configuration catalog builder (tools/build_catalog.py).
 catalog = ["pyyaml==6.0.3", "openpyxl==3.1.5"]
 # Test toolchain.
-dev = ["pytest==9.0.2", "jsonschema==4.25.0", "openpyxl==3.1.5"]
+dev = ["pytest==9.1.1", "jsonschema==4.26.0", "openpyxl==3.1.5"]
 
 [project.scripts]
 sgea = "sgea:main"

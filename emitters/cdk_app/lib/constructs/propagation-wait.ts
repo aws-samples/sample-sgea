@@ -4,7 +4,7 @@
 // CloudFormation creates a resource the moment its role policy reports complete, but services that
 // check the role at create time (AgentCore Gateway: GetPolicyEngine; AWS Config: a freshly created
 // service-linked role) can still be denied for a few seconds. Inline Python (no assets); it answers
-// CloudFormation itself — cfnresponse is not injected for inline python3.12 (sandbox, 2026-10-15).
+// CloudFormation itself — cfnresponse is not injected for inline python3.12+ (sandbox, 2026-10-15).
 import { Construct } from 'constructs';
 import { CustomResource, Duration, Tags, aws_lambda as lambda } from 'aws-cdk-lib';
 
@@ -29,7 +29,7 @@ export class PropagationWait extends Construct {
   constructor(scope: Construct, id: string, props: PropagationWaitProps = {}) {
     super(scope, id);
     const fn = new lambda.SingletonFunction(this, 'Fn', { uuid: '6c1f0d7e-sgea-propagation-wait',
-      runtime: lambda.Runtime.PYTHON_3_12, handler: 'index.handler', code: lambda.Code.fromInline(CODE),
+      runtime: new lambda.Runtime('python3.15', lambda.RuntimeFamily.PYTHON, { supportsInlineCode: true }), handler: 'index.handler', code: lambda.Code.fromInline(CODE),
       timeout: Duration.seconds(120), description: 'SGEA deploy helper: IAM propagation wait' });
     Tags.of(fn).add('sgea:role', 'deploy-helper');
     this.resource = new CustomResource(this, 'Wait', { serviceToken: fn.functionArn, resourceType: 'Custom::SgeaPropagationWait',

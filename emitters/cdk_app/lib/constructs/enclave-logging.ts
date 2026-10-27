@@ -17,6 +17,7 @@ export class EnclaveLogging extends Construct {
   public readonly alarmTopic: sns.ITopic;          // cloudwatch-alarm-action-check, sns-encrypted-kms
   public readonly dataStoreArns: string[] = [];    // log / config stores for enclave-backup
   public configBucketName!: string;
+  public trailLogGroup!: logs.ILogGroup;           // /sgea/<env>/cloudtrail (enclave-monitoring metric filters)
   constructor(scope: Construct, id: string, p: EnclaveLoggingProps) {
     super(scope, id);
     const acct = Aws.ACCOUNT_ID, part = Aws.PARTITION, region = Aws.REGION;
@@ -101,6 +102,7 @@ export class EnclaveLogging extends Construct {
     this.invocationLogGroup = invocations;
     group('AgentCore', `/sgea/${p.env}/agentcore`);
     const trailGroup = group('CloudTrailGroup', `/sgea/${p.env}/cloudtrail`);
+    this.trailLogGroup = trailGroup;
 
     // ----- Bedrock model-invocation logging -----
     if (p.logging.model_invocation_logging) {

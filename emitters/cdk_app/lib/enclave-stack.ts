@@ -23,6 +23,7 @@ import { DodScca } from './constructs/dod-scca';
 import { AccountBaseline } from './constructs/account-baseline';
 import { EnclaveBackup } from './constructs/enclave-backup';
 import { DeployHelperLogs } from './constructs/aspects';
+import { EnclaveMonitoring } from './constructs/monitoring';
 export interface EnclaveStackProps extends StackProps { cfg: any; inputs: EnvInputs; }
 
 export class EnclaveStack extends Stack {
@@ -34,7 +35,7 @@ export class EnclaveStack extends Stack {
     // AWS Config's service-linked role first: the enclave CMK and the Config store name it as a principal (no
     // wildcard principals). Where the landing zone owns Config (createConfigRecorder=false) it already exists.
     const configSlr = i.createConfigRecorder ? new iam.CfnServiceLinkedRole(this, 'ConfigSlr', { awsServiceName: 'config.amazonaws.com' }) : undefined;
-    const kmsC = i.kmsKeyArn ? undefined : new EnclaveKms(this, 'Kms', { env: i.env });
+    const kmsC = i.kmsKeyArn ? undefined : new EnclaveKms(this, 'Kms', { env: i.env, partition: cfg.partition });
     if (kmsC && configSlr) kmsC.node.addDependency(configSlr);
     const key: kms.IKey = kmsC ? kmsC.key : kms.Key.fromKeyArn(this, 'EnclaveKey', i.kmsKeyArn!);
     const kmsKeyArn = key.keyArn;
@@ -86,6 +87,15 @@ export class EnclaveStack extends Stack {
         toolPolicyInterceptor: d.guardrail.gateway_tool_path && !d.policy_engine_available,
         cloudwatchRetentionDays: d.cloudwatch_retention_days, tokenControl: cfg.token_control, ledger: governance.ledger,
         ...alarms, reservedConcurrency: ab.lambda_reserved_concurrency ?? 100 });
+    }
+    // ----- monitoring layer (ADR 0002): event routing, CloudTrail alarms, health, cost, Access Analyzer,
+    // Transaction Search, optional break-glass role. -c sgea:manageMonitoring=false where the landing zone owns it.
+    if (i.manageMonitoring) {
+      new EnclaveMonitoring(this, 'Monitoring', { inputs: i, key, ...alarms, partition: cfg.partition,
+        trailLogGroup: logging.trailLogGroup, retentionDays: d.cloudwatch_retention_days,
+        modelInvocationLogging: !!cfg.logging.model_invocation_logging,
+        guardrailArn: guardrail.cfn.attrGuardrailArn, guardrailVersion: guardrail.version.attrVersion,
+        gatewayArn: platform?.gatewayArn, stackNames: [this.stackName] });
     }
     let aurora: EnclaveAurora | undefined;
     if (d.aurora && i.auroraSubnetIds.length) {

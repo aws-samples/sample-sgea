@@ -6,7 +6,7 @@ What an application team does to deploy an agent into the enclave. The reference
 by the conformance packs on tenant resources. The enclave team owns everything named `sgea-<env>-*` that the enclave
 export creates; the tenant owns its own stack.
 
-Related: [change and upgrade](change-and-upgrade.md), [access review](access-review.md),
+Build and review against the requirements contract: [tenant requirements](tenant-requirements.md) (TR-01–TR-25, with code for Python, Node.js, .NET and Java). Related: [change and upgrade](change-and-upgrade.md), [access review](access-review.md),
 [key and secret management](key-and-secret-management.md).
 
 ![Application-team responsibility matrix: inherited from the enclave (baseline guardrail, identity framework and gateway JWT authorizer, tenant-isolation SCPs / RCPs and data perimeter, model allow-list, enclave CMK, network endpoints, logging and conformance packs, token budgets, backup and detective controls, the control baseline and evidence) versus owned by the application team (agent code, its data, OIDC app client, scoped execution role, container image, tool Lambdas, gateway tool registration, runtime via the SGEA wrapper, tenant and profile tags, its full requirement scope and ATO).](../diagrams/sgea_04_app_responsibility.png)

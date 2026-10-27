@@ -95,6 +95,11 @@ function suppressions(node: CfnResource): { guard: string[]; checkov: Skip[] } {
       if (role === 'config-delivery') guard.push('S3_BUCKET_DEFAULT_LOCK_ENABLED');   // AWS Config delivery rejects Object Lock
       break;
     }
+    case 'AWS::IAM::Role':           // ADR 0002 break-glass: AdministratorAccess by design (MFA, 1 h, every use alarms)
+      if (tags['sgea:role'] === 'break-glass') {
+        checkov.push({ id: 'CKV_AWS_274', comment: 'Break-glass role (ADR 0002): AdministratorAccess by design; MFA-gated trust, 1 h sessions, every assumption raises sgea-<env>-ct-break-glass-assumed' });
+      }
+      break;
     case 'AWS::Lambda::Function':
       if (tags['sgea:role'] === 'deploy-helper') {
         const why = 'CDK deploy helper: runs only during deployment, invoked synchronously by CloudFormation, no enclave data';

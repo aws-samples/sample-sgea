@@ -14,10 +14,12 @@ try:
     from .derived import (account_baseline, backup_policy, catalog_rules, conformance_pack_files,
                           log_retention_days, policy_engine_available, replica_region)
     from . import manual_steps
+    from .terraform_emitter import CT_FILTERS, EVENT_RULES
 except ImportError:  # in-repo fallback import (sgea._load_emitters)
     from derived import (account_baseline, backup_policy, catalog_rules, conformance_pack_files,
                          log_retention_days, policy_engine_available, replica_region)
     import manual_steps
+    from terraform_emitter import CT_FILTERS, EVENT_RULES
 
 # AWS Backup plan rule the emitters write (modules/enclave-backup aws_backup_plan, CDK EnclaveBackup 'daily'):
 # satisfies backup-plan-min-frequency-and-min-retention-check requiredFrequencyValue = 1 day.
@@ -72,6 +74,60 @@ def alarms(resolved, root):
                     "Sum < 1 for 2 x 15 min (missing data = breaching)",
                     "Meter heartbeat stopped; after `fail_closed_hours` (%s h) the interceptor denies every tool call." % (
                         resolved["token_control"].get("fail_closed_hours", 4))))
+    return out + monitoring_alarms(resolved)
+
+
+CT_MEANING = {
+    "unauthorized-api": "API calls denied (`*UnauthorizedOperation`, `AccessDenied*`): misconfigured role or probing.",
+    "console-no-mfa": "IAM-user console sign-in without MFA.",
+    "root-usage": "Root user activity.",
+    "iam-policy-changes": "IAM policy created, attached, detached or deleted.",
+    "cloudtrail-changes": "Trail created, updated, deleted, started or stopped (audit trail tampering).",
+    "console-auth-failures": "Failed console sign-ins.",
+    "kms-key-disable-or-delete": "A KMS key disabled or scheduled for deletion (check it is not the enclave key).",
+    "s3-bucket-policy-changes": "Bucket ACL / policy / CORS / lifecycle / replication changed.",
+    "config-changes": "AWS Config recorder or delivery channel changed or stopped.",
+    "security-group-changes": "Security group created, deleted or its rules changed.",
+    "nacl-changes": "Network ACL created, deleted or changed.",
+    "network-gateway-changes": "Internet or customer gateway created, attached, detached or deleted.",
+    "route-table-changes": "Route or route table changed.",
+    "vpc-changes": "VPC created, deleted, peered or its attributes changed.",
+    "organizations-changes": "AWS Organizations policy, account or membership change.",
+    "break-glass-assumed": "The break-glass role was assumed (only with `create_break_glass_role`): start the post-use review.",
+}
+
+EVENT_MEANING = {
+    "guardduty": "GuardDuty finding with severity >= 7",
+    "securityhub": "New HIGH / CRITICAL Security Hub finding",
+    "inspector": "HIGH / CRITICAL Amazon Inspector finding",
+    "config-compliance": "An AWS Config rule turned NON_COMPLIANT",
+    "backup": "AWS Backup backup / copy / restore job FAILED, ABORTED or EXPIRED",
+    "secret-rotation": "Secrets Manager rotation failed (for example the Aurora admin secret)",
+    "access-analyzer": "Active IAM Access Analyzer finding (only when an analyzer is created)",
+    "stack-drift": "CloudFormation drift detected on the enclave stack (CDK only; daily drift detection)",
+}
+
+
+def monitoring_alarms(resolved):
+    """Alarms of the enclave-monitoring layer (ADR 0002; `manage_monitoring`, default on)."""
+    agentcore = "bedrock-agentcore" in resolved["services"]["allow"]
+    out = [("sgea-<env>-ct-%s" % name, "Metric filter on `/sgea/<env>/cloudtrail` (`SGEA/<env>/CloudTrail`)", "Sum >= 1 over 5 min",
+            CT_MEANING[name]) for name, _ in CT_FILTERS + [("break-glass-assumed", None)]]
+    out += [("sgea-<env>-bedrock-throttles", "`AWS/Bedrock` `InvocationThrottles` (account)", "Sum >= 10 for 2 x 5 min",
+             "Model calls throttled: check service quotas (TPM / RPM) and retry behaviour."),
+            ("sgea-<env>-bedrock-server-errors", "`AWS/Bedrock` `InvocationServerErrors` (account)", "Sum >= 5 over 5 min",
+             "Bedrock server errors: check the AWS Health Dashboard and the model in use.")]
+    if resolved["logging"].get("model_invocation_logging"):
+        out.append(("sgea-<env>-bedrock-invocation-log-delivery", "`AWS/Bedrock` `ModelInvocationLogsCloudWatchDeliverySuccess`",
+                    "Minimum < 1 over 15 min", "Model-invocation logs not delivered: audit gap and the token meter stops crediting."))
+    out.append(("sgea-<env>-guardrail-interventions", "`AWS/Bedrock/Guardrails` `InvocationsIntervened` (baseline guardrail)",
+                "Sum >= `guardrail_intervention_threshold` (default 50) over 15 min",
+                "Spike in guardrail blocks: possible attack or a false-positive wave (docs/operations/incident-response.md)."))
+    if agentcore:
+        out += [("sgea-<env>-gateway-system-errors", "`AWS/Bedrock-AgentCore` `SystemErrors` (gateway)", "Sum >= 5 over 5 min",
+                 "Gateway failing tool calls: check targets and the interceptor."),
+                ("sgea-<env>-gateway-throttles", "`AWS/Bedrock-AgentCore` `Throttles` (gateway)", "Sum >= 10 for 2 x 5 min",
+                 "Gateway throttling: check quotas and caller retry behaviour.")]
     return out
 
 
@@ -284,8 +340,15 @@ def render(resolved, root, targets):
                     if ab["alarm_insufficient_data_action"] else " (ALARM)"), "",
                 "| Alarm | Metric | Fires when | Meaning / first action |", "|---|---|---|---|"] + \
                ["| `%s` | %s | %s | %s |" % a for a in al] + \
-               ["", "First action for any of them: the function's log group `/aws/lambda/<function>` and its "
-                "dead-letter queue; see docs/operations/incident-response.md.", ""]
+               ["", "First action: for the Lambda alarms, the function's log group `/aws/lambda/<function>` and its "
+                "dead-letter queue; for the `-ct-` alarms, the matching events in the CloudTrail log group or Event history; "
+                "see docs/operations/incident-response.md.", "",
+                "### Events routed to the alarm topic", "",
+                "EventBridge rules `sgea-<env>-evt-<name>` (`manage_monitoring`, ADR 0002):", "",
+                "| Rule | Fires on |", "|---|---|"] + \
+               ["| `sgea-<env>-evt-%s` | %s |" % (n, EVENT_MEANING[n]) for n in EVENT_RULES + ["stack-drift"]] + \
+               ["", "Terraform deployments: schedule `terraform plan -detailed-exitcode` in your pipeline for drift "
+                "(exit code 2 = drift); the CDK engine schedules CloudFormation drift detection daily.", ""]
     else:
         out += ["This profile emits no CloudWatch alarms (no gateway interceptor or token meter).", ""]
 

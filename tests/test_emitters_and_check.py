@@ -683,8 +683,11 @@ def test_operations_alarm_names_match_the_emitters():
     import re, copy, operations
     r, out = _emit_both("fedramp-moderate-hipaa.commercial.json")
     tf = _read_all(os.path.join(out, "terraform"), ".tf")
-    emitted = {n.replace("${local.interceptor_name}", "sgea-${var.env}-tool-policy").replace("${var.env}", "<env>")
-               for n in re.findall(r'alarm_name\s*=\s*"([^"]+)"', tf)}
+    import terraform_emitter as te
+    raw = re.findall(r'alarm_name\s*=\s*"([^"]+)"', tf)
+    ct = ["sgea-${var.env}-ct-%s" % n for n, _ in te.CT_FILTERS] + ["sgea-${var.env}-ct-break-glass-assumed"]
+    raw = [x for x in raw if x != "sgea-${var.env}-ct-${each.key}"] + (ct if "sgea-${var.env}-ct-${each.key}" in raw else [])
+    emitted = {n.replace("${local.interceptor_name}", "sgea-${var.env}-tool-policy").replace("${var.env}", "<env>") for n in raw}
     names = {a[0] for a in operations.alarms(r, ROOT)}
     assert names == emitted, (names, emitted)
     cdk_src = _read_all(os.path.join(ROOT, "emitters", "cdk_app", "lib"), ".ts")
@@ -694,7 +697,8 @@ def test_operations_alarm_names_match_the_emitters():
     assert all("`%s`" % n in md for n in names)
     off = copy.deepcopy(r)                                  # no token control, policy engine available: no alarms
     off["token_control"]["enabled"] = False
-    assert operations.alarms(off, ROOT) == [] and "sgea-<env>-token-meter" not in operations.render(off, ROOT, ["terraform"])
+    assert {a[0] for a in operations.alarms(off, ROOT)} == {a[0] for a in operations.monitoring_alarms(off)}
+    assert "sgea-<env>-token-meter" not in operations.render(off, ROOT, ["terraform"])
     assert "Token budgets" not in operations.render(off, ROOT, ["terraform"])
 
 

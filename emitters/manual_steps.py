@@ -10,9 +10,9 @@ config, the composed packs' parameters (catalog/<baseline>.json) and the rule-di
 import json, os
 
 try:
-    from .derived import account_baseline, endpoint_services, policy_engine_available, replica_region, scca_required
+    from .derived import account_baseline, endpoint_services, log_retention_days, policy_engine_available, replica_region, scca_required
 except ImportError:  # in-repo fallback import
-    from derived import account_baseline, endpoint_services, policy_engine_available, replica_region, scca_required
+    from derived import account_baseline, endpoint_services, log_retention_days, policy_engine_available, replica_region, scca_required
 
 LAMBDA_QUOTA_CODE = "L-B99A9384"   # Lambda: Concurrent executions
 LAMBDA_UNRESERVED_MIN = 100        # Lambda always keeps 100 executions unreserved
@@ -200,6 +200,21 @@ def render(resolved, root, targets):
             "`aws configservice start-config-rules-evaluation --config-rule-names <rule ...>` (Config console: "
             "Conformance packs → Re-evaluate). Then confirm the packs report compliant and review any `runtime-only` rule "
             "(`docs/CONTROL-COVERAGE.md`).",
-            "3. ISSO review of the SGEA-inferred Bedrock / AgentCore controls (`sources/inferred/service-controls.yaml`) "
+            "3. **Tracing (AgentCore observability).** The enclave turns on CloudWatch Transaction Search and installs the "
+            "X-Ray log resource policy (`manage_transaction_search`, CDK `sgea:manageTransactionSearch`, default on; set "
+            "it to false where the landing zone owns Transaction Search). X-Ray creates the `aws/spans` log group with the "
+            "first spans (the IaC cannot: names starting with `aws/` are reserved). Then bring it under the enclave "
+            "controls, or the packs report it (`cloudwatch-log-group-encrypted`, `cw-loggroup-retention-period-check`): "
+            "`aws logs associate-kms-key --log-group-name aws/spans --kms-key-id <enclave CMK ARN>` and "
+            "`aws logs put-retention-policy --log-group-name aws/spans --retention-in-days %d`; if AWS rejects either for "
+            "this reserved group, record a documented exception. Tenant agents emit spans with AWS Distro for "
+            "OpenTelemetry (`docs/operations/tenant-requirements.md`, TR-23 to TR-25)." % log_retention_days(resolved, root),
+            "4. **Monitoring.** The topic from step 1 receives the enclave "
+            "alarms, the security-finding / compliance / backup / rotation events and the CloudTrail tampering alarms "
+            "(`OPERATIONS.md`, `docs/adr/0002-enclave-monitoring.md`). Set `monthly_budget_usd` (CDK "
+            "`sgea:monthlyBudgetUsd`) to turn on the cost budget. Terraform deployments: list your pipeline role in "
+            "`org_policy_exempt_principal_arns` before applying the SCP bundles, or applies that change the trail, the "
+            "recorder or the enclave key are denied.",
+            "5. ISSO review of the SGEA-inferred Bedrock / AgentCore controls (`sources/inferred/service-controls.yaml`) "
             "and of the rule dispositions (`sources/inferred/rule-dispositions.yaml`).", ""]
     return "\n".join(out)

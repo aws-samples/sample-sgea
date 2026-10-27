@@ -226,6 +226,14 @@
           "items": {
             "type": "string"
           }
+        },
+        "org_policy_exempt_principal_arns": {
+          "type": "array",
+          "description": "Optional principal ARNs (wildcards allowed) exempt from the audit-protection SCP statements (ADR 0002), in addition to the CDK bootstrap execution role and sgea-*-break-glass.",
+          "items": {
+            "type": "string",
+            "pattern": "^arn:"
+          }
         }
       }
     },

@@ -201,3 +201,19 @@ def _run():
 
 if __name__ == "__main__":
     sys.exit(_run())
+
+
+def test_run_sandbox_test_quota_preflight_snippet_runs():
+    """The Python embedded in run_sandbox_test.sh's quota preflight must run against the current emitters."""
+    import contextlib, io, re
+    src = open(os.path.join(ROOT, "examples", "run_sandbox_test.sh")).read()
+    code = re.search(r'NEED=\$\(python3 -c "\n(.*?)"\)', src, re.S).group(1)
+    code = code.replace("$PROFILE", "profiles/fedramp-moderate-hitrust.commercial.json")
+    out, cwd = io.StringIO(), os.getcwd()
+    try:
+        os.chdir(ROOT)
+        with contextlib.redirect_stdout(out):
+            exec(compile(code, "run_sandbox_test.sh:preflight", "exec"), {"__name__": "preflight"})  # nosec B102 - repo-local snippet under test
+    finally:
+        os.chdir(cwd)
+    assert int(out.getvalue().strip()) >= 0

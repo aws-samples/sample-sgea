@@ -19,7 +19,7 @@ Baseline validation status: **Sandbox-validated (Terraform, CDK)**.
 | Profile | Composes | How this baseline is used | Partition | Regions (primary; allowed) | Terraform | CDK |
 |---|---|---|---|---|---|---|
 | `fedramp-moderate-hipaa.commercial` | fedramp-moderate + hipaa | composed: pack deployed, rules checked | aws | us-east-1; us-east-1, us-east-2, us-west-2 | sandbox-validated (2026-10-16) | sandbox-validated (2026-10-16) |
-| `fedramp-moderate-hitrust.commercial` | fedramp-moderate + hipaa + hitrust | composed: pack deployed, rules checked | aws | us-east-1; us-east-1, us-east-2, us-west-2 | sandbox-validated (2026-10-21) | sandbox-validated (2026-10-21) |
+| `fedramp-moderate-hitrust.commercial` | fedramp-moderate + hipaa + hitrust | composed: pack deployed, rules checked | aws | us-east-1; us-east-1, us-east-2, us-west-2 | sandbox-validated (2026-10-27) | sandbox-validated (2026-10-27) |
 
 ## Control coverage
 
@@ -128,8 +128,8 @@ Sandbox deployments of profiles composing this baseline, with the as-deployed co
 |---|---|---|---|---|---:|
 | fedramp-moderate-hipaa-commercial | CDK | 2026-10-16 15:29 UTC | 159 | 80 | 79 |
 | fedramp-moderate-hipaa-commercial | Terraform | 2026-10-16 03:35 UTC | 152 | 79 | 77 |
-| fedramp-moderate-hipaa-hitrust-commercial | CDK | 2026-10-21 20:24 UTC | 163 | 74 | 72 |
-| fedramp-moderate-hipaa-hitrust-commercial | Terraform | 2026-10-21 22:35 UTC | 145 | 72 | 70 |
+| fedramp-moderate-hipaa-hitrust-commercial | CDK | 2026-10-27 03:18 UTC | 197 | 101 | 99 |
+| fedramp-moderate-hipaa-hitrust-commercial | Terraform | 2026-10-27 02:20 UTC | 178 | 98 | 96 |
 
 ## Operations
 

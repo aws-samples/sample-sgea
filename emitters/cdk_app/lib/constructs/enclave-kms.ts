@@ -8,7 +8,7 @@ import { Aws, Duration, RemovalPolicy, aws_iam as iam, aws_kms as kms } from 'aw
 
 export class EnclaveKms extends Construct {
   public readonly key: kms.Key;
-  constructor(scope: Construct, id: string, props: { env: string }) {
+  constructor(scope: Construct, id: string, props: { env: string; partition?: string }) {
     super(scope, id);
     const acct = Aws.ACCOUNT_ID, part = Aws.PARTITION, region = Aws.REGION;
     this.key = new kms.Key(this, 'Key', {
@@ -34,6 +34,12 @@ export class EnclaveKms extends Construct {
       Action: ['kms:GenerateDataKey*', 'kms:Decrypt'], Condition: { StringEquals: { 'aws:SourceAccount': acct } } });
     // CloudWatch alarms publish to the CMK-encrypted security-alarm topic (sns-encrypted-kms).
     allow({ Sid: 'CloudWatchAlarmsToEncryptedSns', Principal: { Service: 'cloudwatch.amazonaws.com' },
+      Action: ['kms:GenerateDataKey*', 'kms:Decrypt'], Condition: { StringEquals: { 'aws:SourceAccount': acct } } });
+    // EventBridge rules, AWS Budgets and Cost Anomaly Detection publish to the same topic (ADR 0002).
+    allow({ Sid: 'EventDeliveryToEncryptedSns',
+      // AWS Budgets / Cost Anomaly Detection do not run in AWS GovCloud (US): name them only in the commercial partition.
+      Principal: { Service: props.partition === 'aws-us-gov' ? ['events.amazonaws.com']
+        : ['events.amazonaws.com', 'budgets.amazonaws.com', 'costalerts.amazonaws.com'] },
       Action: ['kms:GenerateDataKey*', 'kms:Decrypt'], Condition: { StringEquals: { 'aws:SourceAccount': acct } } });
   }
 }

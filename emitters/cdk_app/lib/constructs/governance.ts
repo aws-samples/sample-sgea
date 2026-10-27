@@ -61,7 +61,7 @@ export class Governance extends Construct {
       const group = new logs.LogGroup(this, 'MeterLogs', { logGroupName: `/aws/lambda/${fname}`,
         retention: props.cloudwatchRetentionDays as logs.RetentionDays, encryptionKey: props.key, removalPolicy: RemovalPolicy.RETAIN });
       const meter = new lambda.Function(this, 'TokenMeter', {
-        functionName: fname, runtime: lambda.Runtime.PYTHON_3_12, handler: 'token_meter.handler',
+        functionName: fname, runtime: new lambda.Runtime('python3.15', lambda.RuntimeFamily.PYTHON, { supportsInlineCode: true }), handler: 'token_meter.handler',
         code: lambda.Code.fromAsset(path.join(__dirname, '..', '..', 'lambda')),
         timeout: Duration.seconds(30), memorySize: 256, reservedConcurrentExecutions: props.reservedConcurrency ?? 20, // lambda-concurrency-check
         deadLetterQueue: new sqs.Queue(this, 'MeterDlq', { queueName: `${fname}-dlq`, encryption: sqs.QueueEncryption.KMS,
